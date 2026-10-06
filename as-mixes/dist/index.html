@@ -33,6 +33,14 @@
             aria-hidden="true">↓</span></a>
       </div>
     </section>
+    <section class="about section wrap" id="about" aria-labelledby="about-heading">
+      <div class="about-copy">
+        <h2 id="about-heading">About Me</h2>
+        <p>I’m a mixing engineer focused mainly on rock and metal.</p>
+        <p>What I care about most is making a mix feel powerful, clear and balanced without sanding off what makes the song interesting in the first place. I spend a lot of time on translation too — if it only sounds good on one pair of headphones, I don’t really consider the job finished.</p>
+        <p>I like working with dense guitars, heavy drums and aggressive vocals, but I’m not trying to force every track into the same sound. The goal is to make the production feel like the best version of itself, not like one of my previous mixes.</p>
+      </div>
+    </section>
     <div class="genre-band wrap"><span>MIXING AND MASTERING FOR HEAVY MUSIC</span>
       <div>ROCK <b>/</b> METAL <b>/</b> ALTERNATIVE <b>/</b> HARDCORE</div>
     </div>
@@ -141,7 +149,7 @@
       <div>
         <p class="eyebrow">03 / CONTACT</p>
         <h2>Tell me about<br><em>your project.</em></h2>
-        <p>Send me the number of songs, a few references, and your timeline. I’ll get back to you to discuss the work and price.</p><a
+        <p>Tell me about your project, track count and deadline, and I’ll get back to you with a quote.</p><a
           class="email" href="mailto:hello@example.com">hello@example.com <span aria-hidden="true">↗</span></a>
         <p class="demo-note">Demo contact address · Replace before accepting enquiries.</p>
       </div>
@@ -154,8 +162,13 @@
             <option>Mixing</option>
             <option>Mastering</option>
             <option>Let’s figure it out</option>
-          </select></label><label>Tell me about the project<textarea name="message" rows="4"
-            placeholder="Number of songs, references, timeline, and a link to your demos…" required
+          </select></label>
+        <div class="form-row">
+          <label>Tracks per mix (optional)<input name="trackCount" type="number" min="1" step="1" placeholder="Number of audio tracks in a mix"></label>
+          <label>Deadline (optional)<input name="deadline" type="text" placeholder="A date, timeframe, or flexible" maxlength="100"></label>
+        </div>
+        <label>Tell me about the project<textarea name="message" rows="4"
+            placeholder="A few details, references, and a link to your demos…" required
             maxlength="5000"></textarea></label><button class="button" type="submit">Prepare an email <span
             aria-hidden="true">↗</span></button>
         <p class="form-note" id="form-status" role="status">Opens your email app with the project details. Nothing is

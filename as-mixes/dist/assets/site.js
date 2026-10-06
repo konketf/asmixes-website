@@ -27,7 +27,11 @@ document.querySelector('#contact-form').addEventListener('submit', event => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   const subject = `Project enquiry: ${data.get('service')} — ${data.get('name')}`;
-  const body = `Name / band: ${data.get('name')}\nEmail: ${data.get('email')}\nService: ${data.get('service')}\n\n${data.get('message')}`;
+  const projectDetails = [
+    data.get('trackCount') && `Audio tracks per mix: ${data.get('trackCount')}`,
+    data.get('deadline') && `Deadline: ${data.get('deadline')}`,
+  ].filter(Boolean);
+  const body = [`Name / band: ${data.get('name')}`, `Email: ${data.get('email')}`, `Service: ${data.get('service')}`, ...projectDetails, '', data.get('message')].join('\n');
   window.location.href = `mailto:hello@example.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   document.querySelector('#form-status').textContent = 'Your email draft is ready in your email app. If it did not open, email hello@example.com directly. This demo address must be replaced before launch.';
 });
