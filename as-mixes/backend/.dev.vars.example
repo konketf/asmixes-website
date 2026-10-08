@@ -1,0 +1,3 @@
+# Never put real secrets in a tracked file. Production: wrangler secret put ADMIN_EMAIL --config wrangler.admin.jsonc
+ADMIN_EMAIL=owner@example.com
+# Local JWT verification is NOT bypassed. Use automated tests for the offline workflow.

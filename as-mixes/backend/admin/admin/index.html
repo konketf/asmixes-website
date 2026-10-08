@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>AS Mixes — Portfolio Admin</title>
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/admin.js" defer></script>
+</head>
+<body>
+  <main class="wrap admin-shell">
+    <header class="admin-header"><a class="brand" href="/admin/">AS MIXES</a><div><span id="identity">Checking access…</span> <a href="/cdn-cgi/access/logout">Sign out</a></div></header>
+    <h1>Portfolio</h1>
+    <p class="admin-intro">Upload previews, edit details, and choose what appears on your website.</p>
+    <p id="status" role="status" aria-live="polite">Loading your projects…</p>
+    <p id="usage" class="demo-note"></p>
+    <div class="admin-layout" id="dashboard" hidden>
+      <section aria-labelledby="editor-heading">
+        <div class="admin-section-head"><h2 id="editor-heading">New project</h2><button type="button" class="secondary" id="new-project">Clear / new</button></div>
+        <form id="project-form">
+          <label>Title<input name="title" required maxlength="120" autocomplete="off"></label>
+          <label>Artist / band<input name="artist" required maxlength="120" autocomplete="off"></label>
+          <label>Credit<select name="credit"><option>Mixing + mastering</option><option>Mixing</option><option>Mastering</option></select></label>
+          <label>Description (optional)<textarea name="description" rows="3" maxlength="1000"></textarea></label>
+          <label>Audio preview<input name="audio" type="file" accept=".mp3,.wav,audio/mpeg,audio/wav"></label>
+          <p class="form-note">MP3 or WAV, up to 30 MiB. MP3 is recommended for fast playback. Leave blank when editing to keep the current file.</p>
+          <label>Cover artwork<input name="artwork" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></label>
+          <p class="form-note">JPEG, PNG, or non-animated WebP, up to 5 MiB and 20 megapixels. Both artwork and audio are required to publish.</p>
+          <label class="checkbox-label"><input name="published" type="checkbox"> Publish on the website</label>
+          <p class="form-note">Drafts are private. Publish only previews and artwork you have permission to share.</p>
+          <button class="button" type="submit" id="save">Save project <span aria-hidden="true">↗</span></button>
+        </form>
+      </section>
+      <section aria-labelledby="projects-heading"><h2 id="projects-heading">Your projects</h2><p class="form-note">Use Move up / Move down to change the public order.</p><div id="projects"></div></section>
+    </div>
+    <noscript><p>JavaScript is required to manage projects. Authentication is enforced by the server.</p></noscript>
+  </main>
+</body>
+</html>

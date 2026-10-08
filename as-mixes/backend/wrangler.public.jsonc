@@ -1,0 +1,10 @@
+{
+  "name": "as-mixes-portfolio",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-10-08",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": { "APP_MODE": "public", "PUBLIC_ORIGIN": "https://konketf.github.io" },
+  "d1_databases": [{ "binding": "DB", "database_name": "as-mixes-portfolio", "database_id": "REPLACE-WITH-D1-ID", "migrations_dir": "migrations" }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "as-mixes-media" }]
+}

@@ -1,0 +1,9 @@
+backend/node_modules/
+backend/.wrangler/
+backend/build/
+backend/admin/assets/site.css
+backend/.dev.vars*
+backend/.env*
+!backend/.dev.vars.example
+!backend/.env.example
+*.log
