@@ -12,9 +12,13 @@ Open `dist/index.html` directly or serve `dist/` with any static web server. Dep
 
 ## Portfolio admin
 
-A Cloudflare Workers backend, private R2 media storage, D1 metadata, and a Cloudflare Access-protected admin dashboard are in `backend/`. GitHub Pages remains the public frontend. See [deployment instructions](backend/DEPLOYMENT.md) and [security boundaries](backend/SECURITY.md). No cloud resources have been deployed or credentials configured yet.
+A Cloudflare Workers backend, private R2 media storage, D1 metadata, and a Cloudflare Access-protected admin dashboard are in `backend/`. GitHub Pages remains the public frontend. See [deployment instructions](backend/DEPLOYMENT.md) and [security boundaries](backend/SECURITY.md). Cloudflare resources, owner credentials, and Access policies are managed separately from Pages.
 
-After one-time setup, manage projects at the admin Worker's `/admin/`: upload audio/artwork, edit details, reorder, publish/unpublish, and delete. Published projects load automatically through `dist/assets/portfolio.js`; set the public Worker URLs in `dist/assets/portfolio-config.js` once. Until configured, the existing static portfolio stays unchanged.
+After one-time setup, manage projects at the admin Worker's `/admin/`: upload audio/artwork, edit details, reorder, publish/unpublish, and delete. Published projects load automatically through `dist/assets/portfolio.js`. The deployed Worker URLs are configured in `dist/assets/portfolio-config.js`.
+
+## GitHub Pages
+
+The repository-root `.github/workflows/pages.yml` uploads only `as-mixes/dist`, with no frontend build step. It runs manually on `main`; pushing does not deploy automatically. After an approved commit/push, choose **GitHub Actions** as the Pages source and manually run **Publish AS Mixes to GitHub Pages**. See the [deployment instructions](backend/DEPLOYMENT.md#5-connect-github-pages-once). This workflow never deploys the Cloudflare backend and needs no Cloudflare secrets.
 
 ## Customize before client use
 

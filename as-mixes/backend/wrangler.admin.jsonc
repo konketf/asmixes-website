@@ -7,12 +7,12 @@
   "assets": { "directory": "./admin", "binding": "ASSETS", "run_worker_first": true, "html_handling": "none" },
   "vars": {
     "APP_MODE": "admin",
-    "ADMIN_ORIGIN": "https://as-mixes-admin.YOUR-SUBDOMAIN.workers.dev",
-    "ACCESS_TEAM_DOMAIN": "YOUR-TEAM.cloudflareaccess.com",
-    "ACCESS_AUD": "REPLACE-WITH-ACCESS-APPLICATION-AUD",
+    "ADMIN_ORIGIN": "https://as-mixes-admin.aleksandr-sinitson.workers.dev",
+    "ACCESS_TEAM_DOMAIN": "lingering-unit-13c7.cloudflareaccess.com",
+    "ACCESS_AUD": "79124a53a242ac92f5898e3e8af006daf7d3e192b76c42c9f4bfd0b1410f4295",
     "STORAGE_QUOTA_BYTES": "1073741824"
   },
-  "d1_databases": [{ "binding": "DB", "database_name": "as-mixes-portfolio", "database_id": "REPLACE-WITH-D1-ID", "migrations_dir": "migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "as-mixes-portfolio", "database_id": "f6ccfbaf-f772-4f9b-a9d1-11e2d086715b", "migrations_dir": "migrations" }],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "as-mixes-media" }],
   "triggers": { "crons": ["17 * * * *"] }
 }

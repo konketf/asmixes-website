@@ -1,0 +1,55 @@
+name: Publish AS Mixes to GitHub Pages
+
+# Publishing is explicit: pushing a commit does not deploy this workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Check public artifact boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f as-mixes/dist/index.html
+          # Reject links and files that must never be served by Pages.
+          if find as-mixes/dist \( -type l -o -type f -links +1 -o -name '.env*' -o -name '.dev.vars*' -o -name '*.pem' -o -name '*.key' -o -name '*.p12' -o -name '*.pfx' -o -iname '*.mp3' -o -iname '*.wav' -o -iname '*.flac' -o -iname '*.aiff' -o -iname '*.aif' -o -iname '*.ogg' -o -iname '*.m4a' -o -iname '*.aac' -o -name 'backend' -o -name 'node_modules' -o -name '.git' -o -name '.wrangler' -o -name 'uploads' \) -print -quit | grep -q .; then
+            echo 'Refusing to publish: dist contains a private, media, or linked file.' >&2
+            exit 1
+          fi
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload only the public website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: as-mixes/dist
+
+  deploy:
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4

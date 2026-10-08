@@ -7,7 +7,7 @@ The public website remains plain HTML/CSS/JavaScript on GitHub Pages. There is n
 
 The `/admin/` page on GitHub Pages is only a link to the private dashboard. GitHub Pages cannot protect static files with Cloudflare Access. No private dashboard data, tokens, or storage credentials are stored on GitHub Pages.
 
-Nothing in this repository creates cloud resources or deploys automatically. Complete the steps below yourself after reviewing the configuration. No Cloudflare credentials were added or infrastructure deployed during implementation. `.openai/hosting.json` belongs to the earlier Sites experiment and is not used by this architecture.
+The Pages workflow in `.github/workflows/pages.yml` publishes only `as-mixes/dist` when manually triggered on `main`. It does not deploy Cloudflare or create cloud resources. Complete the Cloudflare steps below yourself after reviewing the configuration. No Cloudflare credentials are stored in the repository. `.openai/hosting.json` belongs to the earlier Sites experiment and is not used by this architecture.
 
 ## 1. Requirements and cost checks
 
@@ -93,7 +93,9 @@ window.AS_MIXES_PORTFOLIO = Object.freeze({
 });
 ```
 
-These are public URLs, not secrets. Publish the `dist/` directory using your existing GitHub Pages process. Do not publish `backend/`, `.dev.vars`, or `.env` files. If Pages currently serves the repository root, make sure your existing Pages build/deployment actually uses `as-mixes/dist` as its web root; this task does not change your GitHub repository or Pages settings.
+These are public URLs, not secrets. The frontend configuration now contains the deployed Worker origins. Do not publish `backend/`, `.dev.vars`, or `.env` files.
+
+After reviewing and approving the commit and push, set **Settings > Pages > Build and deployment > Source** to **GitHub Actions** yourself (or authorize that settings change separately). Then open **Actions > Publish AS Mixes to GitHub Pages > Run workflow**, selecting `main`. This manual workflow uploads only `as-mixes/dist`; the private backend source and generated backend bundles are never included in its artifact. No Cloudflare credentials are needed by Actions, and pushes alone do not trigger publication. The expected website URL is `https://konketf.github.io/asmixes-website/`.
 
 After this one configuration deployment, uploading/editing/publishing/reordering through the dashboard updates the portfolio on the next page load without a GitHub Pages redeploy. Visit the public site's `/admin/` to find the login link, or bookmark the Worker dashboard directly.
 

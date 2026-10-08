@@ -1,0 +1,30 @@
+# Local credentials and environment files, wherever they are created.
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+!.env.example
+!.dev.vars.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependencies, local Cloudflare state, generated builds and logs.
+node_modules/
+.wrangler/
+build/
+*.log
+.DS_Store
+Thumbs.db
+
+# Portfolio uploads belong in private R2, not Git or the Pages artifact.
+uploads/
+*.mp3
+*.wav
+*.flac
+*.aiff
+*.aif
+*.ogg
+*.m4a
+*.aac

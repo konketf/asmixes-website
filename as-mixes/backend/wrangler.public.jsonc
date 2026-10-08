@@ -5,6 +5,6 @@
   "workers_dev": true,
   "preview_urls": false,
   "vars": { "APP_MODE": "public", "PUBLIC_ORIGIN": "https://konketf.github.io" },
-  "d1_databases": [{ "binding": "DB", "database_name": "as-mixes-portfolio", "database_id": "REPLACE-WITH-D1-ID", "migrations_dir": "migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "as-mixes-portfolio", "database_id": "f6ccfbaf-f772-4f9b-a9d1-11e2d086715b", "migrations_dir": "migrations" }],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "as-mixes-media" }]
 }
