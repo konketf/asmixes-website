@@ -5,10 +5,13 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "prepare:admin": "node scripts/prepare-admin.mjs",
+    "prepare:contact": "node scripts/prepare-contact.mjs",
+    "prepare:fallback": "node scripts/prepare-fallback.mjs",
+    "check:artifacts": "node scripts/check-artifacts.mjs",
     "test": "node --test test/*.test.mjs",
     "test:runtime": "node scripts/runtime-smoke.mjs",
-    "check": "node --check src/worker.mjs && node --check src/auth.mjs && node --check src/validation.mjs && node --check admin/admin/admin.js && node --check ../dist/assets/portfolio.js && node --check ../dist/assets/portfolio-config.js && node --check ../dist/assets/admin-link.js",
-    "build": "npm run prepare:admin && wrangler deploy --dry-run --config wrangler.admin.jsonc --outdir build/admin && wrangler deploy --dry-run --config wrangler.public.jsonc --outdir build/public",
+    "check": "node --check src/worker.mjs && node --check src/auth.mjs && node --check src/validation.mjs && node --check src/contact.mjs && node --check scripts/prepare-contact.mjs && node --check scripts/prepare-fallback.mjs && node --check scripts/check-artifacts.mjs && node --check src/fallback.mjs && node --check admin/admin/admin.js && node --check ../dist/assets/portfolio.js && node --check ../dist/assets/portfolio-config.js && node --check ../dist/assets/admin-link.js && node --check ../dist/assets/contact.js && node --check ../dist/assets/site.js",
+    "build": "npm run prepare:admin && wrangler deploy --dry-run --config wrangler.admin.jsonc --outdir build/admin && wrangler deploy --dry-run --config wrangler.public.jsonc --outdir build/public && npm run prepare:fallback && wrangler deploy --dry-run --config build/fallback/wrangler.json --outdir build/fallback/worker",
     "deploy:admin": "npm run prepare:admin && wrangler deploy --config wrangler.admin.jsonc",
     "deploy:public": "wrangler deploy --config wrangler.public.jsonc"
   },

@@ -4,7 +4,12 @@
   "compatibility_date": "2026-10-08",
   "workers_dev": true,
   "preview_urls": false,
-  "vars": { "APP_MODE": "public", "PUBLIC_ORIGIN": "https://konketf.github.io" },
+  "vars": {
+    "APP_MODE": "public", "PUBLIC_ORIGIN": "https://asmixes.com",
+    "CONTACT_ALLOWED_ORIGINS": "[\"https://asmixes.com\",\"https://www.asmixes.com\"]",
+    "CONTACT_IP_LIMIT": "5", "CONTACT_DAILY_LIMIT": "100"
+  },
+  "triggers": { "crons": ["23 * * * *"] },
   "d1_databases": [{ "binding": "DB", "database_name": "as-mixes-portfolio", "database_id": "f6ccfbaf-f772-4f9b-a9d1-11e2d086715b", "migrations_dir": "migrations" }],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "as-mixes-media" }]
 }

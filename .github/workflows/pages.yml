@@ -3,6 +3,11 @@ name: Publish AS Mixes to GitHub Pages
 # Publishing is explicit: pushing a commit does not deploy this workflow.
 on:
   workflow_dispatch:
+    inputs:
+      fallback:
+        description: 'Publish reviewed direct-email fallback (contact form disabled)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -35,10 +40,13 @@ jobs:
           fi
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+      - name: Prepare reviewed fallback
+        if: inputs.fallback
+        run: node as-mixes/backend/scripts/prepare-fallback.mjs
       - name: Upload only the public website
         uses: actions/upload-pages-artifact@v4
         with:
-          path: as-mixes/dist
+          path: ${{ inputs.fallback && 'as-mixes/backend/build/fallback/site' || 'as-mixes/dist' }}
 
   deploy:
     needs: package

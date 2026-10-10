@@ -1,13 +1,13 @@
 # AS Mixes portfolio management
 
-The public website remains plain HTML/CSS/JavaScript on GitHub Pages. There is no framework or public write API. Two small Cloudflare Workers share one private R2 bucket and one D1 database:
+The public website remains plain HTML/CSS/JavaScript on GitHub Pages. There is no framework or public portfolio write API. The public contact-only POST endpoint sends email after verification and rate limiting. Two small Cloudflare Workers share one private R2 bucket and one D1 database:
 
-- **as-mixes-portfolio**: public, read-only `/api/projects` and `/media/<asset-id>`.
+- **as-mixes-portfolio**: public, read-only `/api/projects` and `/media/<asset-id>`, plus verified `/api/contact` submissions.
 - **as-mixes-admin**: private `/admin/`, administrative APIs, and authenticated draft previews. Protect this entire Worker with Cloudflare Access. The Worker independently verifies Access JWTs using `jose` and allows only the configured owner email.
 
 The `/admin/` page on GitHub Pages is only a link to the private dashboard. GitHub Pages cannot protect static files with Cloudflare Access. No private dashboard data, tokens, or storage credentials are stored on GitHub Pages.
 
-The Pages workflow in `.github/workflows/pages.yml` publishes only `as-mixes/dist` when manually triggered on `main`. It does not deploy Cloudflare or create cloud resources. Complete the Cloudflare steps below yourself after reviewing the configuration. No Cloudflare credentials are stored in the repository. `.openai/hosting.json` belongs to the earlier Sites experiment and is not used by this architecture.
+The Pages workflow in `.github/workflows/pages.yml` publishes only `as-mixes/dist` (or its generated, contact-disabled fallback copy) when manually triggered on `main`. It does not deploy Cloudflare or create cloud resources. Complete the Cloudflare steps below yourself after reviewing the configuration. No Cloudflare credentials are stored in the repository. `.openai/hosting.json` belongs to the earlier Sites experiment and is not used by this architecture.
 
 ## 1. Requirements and cost checks
 
@@ -51,7 +51,7 @@ Apply the included migration once:
 npx wrangler d1 migrations apply DB --remote --config wrangler.admin.jsonc
 ```
 
-The migration only creates the portfolio tables/indexes. Do not point it at another application's database. No migrations were applied to a cloud account during implementation.
+Migrations create the portfolio tables/indexes and the separate contact-limit table/index. Do not point them at another application's database. The owner confirmed that 0002_contact_limits.sql was applied to production; do not recreate resources or reapply SQL manually. Wrangler tracks migration application.
 
 ## 3. Bootstrap the admin Worker and configure Access
 
@@ -74,13 +74,13 @@ Token validation checks signature, RS256 algorithm, configured issuer and audien
 
 ## 4. Deploy the read-only Worker
 
-Set `PUBLIC_ORIGIN` in `wrangler.public.jsonc` to your exact GitHub Pages origin, currently expected to be `https://konketf.github.io` (no path or trailing slash). GitHub project Pages URLs may contain `/asmixes-website/`; that path is **not** part of an origin. If you later use a custom Pages domain, update this value.
+The canonical website origin is `https://asmixes.com`. `PUBLIC_ORIGIN` is set to that exact HTTPS origin. Preserve the existing `https://www.asmixes.com` redirect to the apex domain; this local configuration does not configure DNS, certificates or redirects. Portfolio/audio requests are intended to originate from the canonical page.
 
 ```powershell
 npm run deploy:public
 ```
 
-Do not enable Access on this public Worker. It has no admin routes or static admin assets and refuses all write methods. It grants CORS only to the configured GitHub Pages origin, never with credentials. CORS is not authentication: anyone can fetch deliberately published previews. Unpublished previews remain private even to callers without an Origin header because publication is checked in the database.
+Do not enable Access on this public Worker. It has no admin routes or static admin assets. Portfolio/media routes refuse all write methods; only `/api/contact` permits POST. Portfolio/media CORS uses `PUBLIC_ORIGIN`, while contact CORS uses `CONTACT_ALLOWED_ORIGINS`, never with credentials. CORS is not authentication: anyone can fetch deliberately published previews. Unpublished previews remain private even to callers without an Origin header because publication is checked in the database.
 
 ## 5. Connect GitHub Pages once
 
@@ -95,7 +95,7 @@ window.AS_MIXES_PORTFOLIO = Object.freeze({
 
 These are public URLs, not secrets. The frontend configuration now contains the deployed Worker origins. Do not publish `backend/`, `.dev.vars`, or `.env` files.
 
-After reviewing and approving the commit and push, set **Settings > Pages > Build and deployment > Source** to **GitHub Actions** yourself (or authorize that settings change separately). Then open **Actions > Publish AS Mixes to GitHub Pages > Run workflow**, selecting `main`. This manual workflow uploads only `as-mixes/dist`; the private backend source and generated backend bundles are never included in its artifact. No Cloudflare credentials are needed by Actions, and pushes alone do not trigger publication. The expected website URL is `https://konketf.github.io/asmixes-website/`.
+After reviewing and approving the commit and push, set **Settings > Pages > Build and deployment > Source** to **GitHub Actions** yourself (or authorize that settings change separately). Then open **Actions > Publish AS Mixes to GitHub Pages > Run workflow**, selecting `main`. This manual workflow uploads only the public site directory or its fallback copy; the private backend source and generated backend bundles are never included in its artifact. No Cloudflare credentials are needed by Actions, and pushes alone do not trigger publication. The primary website URL is `https://asmixes.com/`; preserve the existing www-to-apex redirect. GitHub Pages remains the hosting provider.
 
 After this one configuration deployment, uploading/editing/publishing/reordering through the dashboard updates the portfolio on the next page load without a GitHub Pages redeploy. Visit the public site's `/admin/` to find the login link, or bookmark the Worker dashboard directly.
 
@@ -132,3 +132,133 @@ Run local checks/tests/builds, then verify all of these against your actual Clou
 File signatures/structure/dimensions are checked, not just MIME or extensions, but this is not antivirus scanning or complete media decoding. Only the authenticated owner can upload; upload trusted exports and keep browsers updated. Rich HTML, SVG artwork, arbitrary URLs, and arbitrary object keys are not accepted. The server provides controlled content types, `nosniff`, framing/CSP protections, HTTPS-only handling, no-store privacy, and generic internal-error responses. Client rendering uses `textContent`, not HTML interpolation.
 
 This is a single-owner portfolio, not a multi-tenant CMS. It has no application audit-history UI, antivirus service, image transcoder, or guaranteed zero-cost abuse protection. Add Cloudflare rate rules if your account supports them, monitor account limits, and use MFA for Cloudflare, GitHub and your sign-in identity. Protect account access and backups. There is no SOC 2 certification or compliance claim.
+
+## Contact form email delivery
+
+The public Worker sends plain-text enquiries through Resend's HTTPS API. Cloudflare still provides Turnstile verification, secrets and D1 rate-limit counters. No Cloudflare Email Sending binding, SMTP credentials, Resend SDK or additional runtime dependency is needed. Existing Cloudflare Email Routing continues forwarding direct email to `contact@asmixes.com` independently.
+
+Current status, as confirmed by the owner: Resend has verified asmixes.com; RESEND_API_KEY, CONTACT_RECIPIENT, TURNSTILE_SECRET and CONTACT_RATE_SECRET are configured on the production public Worker; migration 0002_contact_limits.sql is applied. The following setup instructions are for reference or recovery, not a request to repeat completed steps. Local tests have not sent real email or independently inspected secret values. Deployment and live email verification still require separate approval. [Domain verification](https://resend.com/docs/dashboard/domains/introduction).
+
+### Setup reference (already completed where noted above)
+
+1. For initial setup or recovery, finish Resend's verification of `asmixes.com` using the DNS records Resend supplies. Preserve the MX records and working Cloudflare Email Routing. Do not replace incoming mail routing merely to enable sending. Wait until the sending domain shows verified before live testing. This implementation uses the fixed From address `contact@asmixes.com`; it does not fall back to an unrelated sender while verification is pending.
+2. In Resend, create a dedicated API key with **Sending access**, restricted to **asmixes.com**, rather than full-account access. Save it securely. Do not paste the key into chat, command arguments, Git, Wrangler `vars`, public CI logs or frontend files. [API key permissions](https://resend.com/docs/dashboard/api-keys/introduction).
+3. Use your existing Managed Turnstile widget. Confirm it authorizes `asmixes.com`. The GitHub hostname is deliberately excluded from contact origins. Supporting it later requires a separately reviewed origin and widget configuration change. The frontend supplies action `contact`; Siteverify must return that exact action and the actual page's hostname. The apex Turnstile hostname registration also covers subdomains, including www; the server independently checks the actual hostname and contact action. Keep the widget secret private. [Turnstile server validation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/).
+4. From `as-mixes/backend`, set these four **secrets on the public Worker**, entering each value only at Wrangler's interactive prompt. These commands change Cloudflare settings and must not be run without setup approval:
+
+```powershell
+npx wrangler secret put RESEND_API_KEY --config wrangler.public.jsonc
+npx wrangler secret put CONTACT_RECIPIENT --config wrangler.public.jsonc
+npx wrangler secret put TURNSTILE_SECRET --config wrangler.public.jsonc
+npx wrangler secret put CONTACT_RATE_SECRET --config wrangler.public.jsonc
+```
+
+Use these values:
+
+| Secret | Value to enter privately |
+| --- | --- |
+| `RESEND_API_KEY` | The dedicated sending-only Resend key |
+| `CONTACT_RECIPIENT` | One mailbox only: `contact@asmixes.com` to use your working forwarding route, or your personal destination directly |
+| `TURNSTILE_SECRET` | The secret key from the existing Turnstile widget |
+| `CONTACT_RATE_SECRET` | A fresh cryptographically random value of at least 32 characters, generated with a password manager or equivalent secure generator |
+
+The recipient is validated as one ordinary mailbox; no display names, comma-separated lists or header characters. It is never supplied by a visitor. Do not configure secrets with `wrangler secret bulk` against a tracked file, in `wrangler.public.jsonc` or in `portfolio-config.js`. The admin Worker needs none of these values. `npm run prepare:contact` now only prints a local setup reminder; it creates no files or resources and never reads credentials.
+
+5. Set the **public Turnstile site key only** in `dist/assets/portfolio-config.js`:
+
+```javascript
+turnstileSiteKey: '0x4AAAAAAFTIxAyb1vI8nf5M',
+```
+
+Keep `apiOrigin` pointing to the existing public Worker and `adminOrigin` to the existing admin Worker. Never put the Turnstile secret, Resend key, HMAC key or private inbox into this file. With `turnstileSiteKey: null`, the form intentionally stays disabled and directs visitors to the public email address. If only the backend is misconfigured, submission fails closed and retains the visitor's message.
+
+6. For a new environment only, after approval apply the migrations to its D1 database. Production 0002 is already applied; do not repeat this step for the current release. The new migration adds only a separate counter table/index:
+
+```powershell
+npx wrangler d1 migrations apply DB --remote --config wrangler.public.jsonc
+```
+
+7. Run local validation before requesting deployment approval:
+
+```powershell
+npm test
+npm run check
+npm run build
+npm run test:runtime
+```
+
+`build` uses `--dry-run`; it does not deploy. Automated tests mock Resend and Siteverify, require no real credentials and send no email. Do not put real provider keys into automated tests. If you later use local development secrets, place them in the already ignored `backend/.dev.vars` and never commit that file; live local testing can send email and requires separate approval.
+
+8. Only after explicit deployment approval, deploy using the normal public config:
+
+```powershell
+npm run deploy:public
+```
+
+No private deployment config or `send_email` binding is used anymore. Any old `wrangler.contact.local.jsonc` is still ignored to protect a pre-existing private destination, but must not be used for the Resend deployment. It has not been deleted or changed. Worker secrets configured on this same named Worker remain outside source control. Admin deployment and Access policies stay independent.
+
+9. Publish the frontend through the existing manual Pages workflow only after approval. Perform one approved real enquiry after domain verification. Check the final inbox and spam folder, Reply-To, retry behavior and Turnstile failures. Success means Resend accepted the request and returned an email ID; it does not guarantee inbox delivery. Provider errors, including unverified-domain rejection, invalid API keys, quota exhaustion, timeouts and malformed responses never report success or reveal provider diagnostics.
+
+### Canonical domain and origins
+
+PUBLIC_ORIGIN is https://asmixes.com. CONTACT_ALLOWED_ORIGINS contains only https://asmixes.com and https://www.asmixes.com. Keep the existing www-to-apex redirect. GitHub-hostname contact submissions are deliberately excluded. Worker URLs are unchanged. These are local settings until an approved public Worker deployment.
+
+### Limits, privacy and provider behavior
+
+- The request schema, mandatory Turnstile verification, hostname/action checks, origin restrictions and safe response headers remain in place. Body limit: 24 KiB. Message limit: 5,000 UTF-16 code units. Optional tracks per mix: integer 1–60. No attachments, HTML bodies, arbitrary headers, client-selected senders or client-selected recipients.
+- Resend receives a fixed sender and subject, one recipient from `CONTACT_RECIPIENT`, plain-text content, and validated customer email in `reply_to`. The API key is used only in the outbound Authorization header to the hardcoded `https://api.resend.com/emails` endpoint. Redirects are refused; requests have an eight-second timeout. No API key, recipient or acceptance ID is returned to the browser or logged by the application. [Resend send-email API](https://resend.com/docs/api-reference/emails/send-email).
+- Unlike the former Cloudflare email binding, Resend does not supply a recipient restriction for this application: the server enforces the fixed recipient. Protect and restrict the API key; a stolen key could be used outside the application's limits and recipient checks. Rotate it immediately if exposed. Sending-only and domain-scoped access limit its permissions but do not impose this form's recipient or rate limits.
+- Default IP limit: 5 attempts per fixed 10-minute window (`CONTACT_IP_LIMIT`, configurable 1–50). Source IP comes from Cloudflare's trusted `CF-Connecting-IP`; missing values fail closed. Invalid submissions count too; shared networks share this limit.
+- Default global limit: 100 verified send attempts per UTC day (`CONTACT_DAILY_LIMIT`, configurable 1–1,000). Reservations are atomic across clients. Provider failures consume a slot to prevent retry storms. Excess returns a clear daily-limit error directing the visitor to retry tomorrow or email the public address, without exposing counters, SQL or private addresses.
+- Expired counter windows never block a new window. Indexed cleanup deletes up to 500 expired rows on requests and hourly public cron; backlogs clear in repeated batches. No raw IP, submitted email, name, message or token is stored in D1. Daily-rotated HMAC IP identifiers are pseudonymous; outages can delay physical deletion.
+- Application logs contain no submitted personal information, tokens, provider responses or credentials. Resend and Cloudflare still process data and may retain provider-side metadata/content according to their policies; review those account settings separately. No settings were altered by this implementation.
+- The UI clears fields only after explicit acceptance. Failures retain the message, refresh Turnstile and permit a retry. A lost response can leave delivery uncertain and retries may duplicate email; no exactly-once delivery guarantee or automatic provider retry is implemented.
+- Resend quotas and pricing now apply; the earlier Cloudflare verified-destination free-send allowance is irrelevant. Review your current [Resend plan and limits](https://resend.com/pricing). Workers/D1 still consume account quotas, and rate limits cannot guarantee zero account cost or eliminate distributed DoS. No paid plan was selected or created here.
+
+### Reviewed fallback and release order
+
+`npm run prepare:fallback` runs offline and creates ignored `build/fallback/site` and `build/fallback/wrangler.json`. The site is copied from the current public website, with its Turnstile key set to null and a direct-email notice. Its real `mailto:contact@asmixes.com` link, styling, portfolio configuration and playback code remain. The fallback Worker delegates portfolio/media and cleanup to the same reviewed implementation, but always rejects contact submissions before touching secrets, counters or email providers. It uses the same Worker name, canonical origin, D1 and private R2 bindings. No admin deployment is involved. `npm run build` dry-runs this fallback too.
+
+All commands below that deploy or run workflows require separate approval. First commit/push the reviewed changes after approval; pushing alone does not publish. Use that same reviewed release commit throughout these steps, without unrelated changes to main. Establish the fallback baseline before enabling contact:
+
+1. From `as-mixes/backend`, prepare and deploy the fallback Worker:
+
+   ```powershell
+   npm.cmd run prepare:fallback
+   npx.cmd wrangler deploy --config build/fallback/wrangler.json
+   npx.cmd wrangler deployments list --config wrangler.public.jsonc
+   ```
+
+   Record the resulting **Worker version ID**, not its deployment ID, as FALLBACK_VERSION_ID. Confirm portfolio GET from Origin https://asmixes.com returns 200 with that exact CORS origin, published audio seeking returns 206, drafts stay private, and contact returns 503. Do not rerun migrations or change secrets.
+
+2. Publish the fallback site using **Actions > Publish AS Mixes to GitHub Pages > Run workflow**, main, with **fallback checked**. If GitHub CLI is installed and authenticated, the equivalent is:
+
+   ```powershell
+   gh workflow run pages.yml --repo konketf/asmixes-website --ref main -F fallback=true
+   ```
+
+   Record the successful fallback run ID and commit SHA. Verify apex HTTPS, existing www redirect, portfolio/playback, direct email link and disabled form on desktop/mobile. This establishes a useful rollback target instead of the old demo-address website.
+
+3. Deploy the normal public Worker with `npm.cmd run deploy:public`. Verify contact OPTIONS from both configured HTTPS origins returns 204 and allows the requesting origin; disallowed origins are rejected. Confirm canonical portfolio/audio access remains working.
+4. Publish the normal frontend using the same workflow with fallback unchecked, or:
+
+   ```powershell
+   gh workflow run pages.yml --repo konketf/asmixes-website --ref main -F fallback=false
+   ```
+
+5. Perform one approved real enquiry; confirm Resend acceptance, arrival/spam folder and Reply-To. Verify provider/challenge failures retain the message. Do not deliberately exhaust production rate limits. Admin protection and published playback must remain working. Production email delivery and hosted-browser behavior are not established by local tests.
+
+For rollback, rerun the recorded **successful fallback** Pages run, then restore its recorded compatible Worker version (replace angle-bracket placeholders with the recorded IDs):
+
+```powershell
+gh run rerun <FALLBACK_PAGES_RUN_ID> --repo konketf/asmixes-website
+npx.cmd wrangler rollback <FALLBACK_VERSION_ID> --config wrangler.public.jsonc
+```
+
+The Wrangler command runs from `as-mixes/backend`. It prompts for confirmation and changes production. Rerunning the fallback Pages workflow rebuilds its original commit and original fallback input. GitHub permits reruns for 30 days; if the run is older, dispatch fallback=true only from reviewed main containing the tested fallback implementation. Do not use the unrelated old demo run. GitHub CLI is not installed in the current local environment; the Actions UI is the available alternative. These CLI forms were checked against official documentation; Wrangler rollback/deployments help and fallback dry-run are checked locally. No real rollback was executed. See [GitHub workflow inputs](https://cli.github.com/manual/gh_workflow_run), [reruns](https://cli.github.com/manual/gh_run_rerun), and [Cloudflare rollback behavior](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/).
+
+Worker rollback restores the selected code/configuration version, not D1/R2 contents. Keep the contact migration/table and portfolio/audio data; do not restore an old database or delete secrets. Both fallback and normal versions share the same cron configuration and storage bindings. If version rollback is unavailable, regenerate and dry-run the fallback from the recorded release checkout, then deploy `build/fallback/wrangler.json` after approval. Verify canonical CORS, playback, draft privacy, direct contact and admin protection again. Fallback run/version IDs cannot exist until the separately approved baseline deployment.
+
+### Local verification
+
+Run `npm test`, `npm run check`, `npm run build`, `npm run test:runtime`, `npm run check:artifacts` and `npm audit`. The artifact scanner is heuristic; it checks normal/fallback frontend and generated Worker bundles for credential patterns, unexpected email addresses, links, audio and environment files without printing matched values. It does not read real secret values or guarantee the absence of arbitrary encoded secrets. Contact tests use in-memory SQLite, mocked HTTP responses for Resend/Siteverify, and a simulated browser form. They cover fixed recipient/sender, REST Authorization and `reply_to`, invalid/header-injection/relay inputs, body size, Turnstile failures and hostname/action mismatches, Resend authorization/domain/quota/server failures, malformed responses, timeouts/network exceptions, atomic concurrent limits, expiry cleanup, daily-cap messaging, message retention and retry/duplicate-click handling. Deployment tests check actual production origins, fallback contact rejection, published audio byte ranges, draft privacy and public artifact configuration. Existing admin, portfolio, audio ranges/privacy and local Workers runtime tests remain. Runtime smoke checks contact preflight and fail-closed missing secrets. Actual DNS, sender verification, widget rendering, provider acceptance and inbox placement require separately approved live verification.

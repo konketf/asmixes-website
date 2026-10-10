@@ -1,4 +1,5 @@
 import { HttpError, verifyAdmin, requireSameOrigin } from './auth.mjs';
+import { handleContact, cleanupContact } from './contact.mjs';
 import { validId, metadata, readJSON, readLimited, inspectFile, AUDIO_LIMIT, ARTWORK_LIMIT, PROJECT_LIMIT } from './validation.mjs';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
@@ -187,6 +188,7 @@ export function createWorker(authenticate = verifyAdmin) {
         if (url.protocol !== 'https:') fail(400, 'HTTPS is required.');
         if (!['admin', 'public'].includes(env.APP_MODE)) fail(503, 'Application is not configured.');
         if (env.APP_MODE === 'public') {
+          if (url.pathname === '/api/contact') return handleContact(request, env);
           const origin = request.headers.get('Origin');
           if (!/^https:\/\//.test(env.PUBLIC_ORIGIN || '') || new URL(env.PUBLIC_ORIGIN).origin !== env.PUBLIC_ORIGIN) fail(503, 'Public origin is not configured.');
           if (origin && origin !== env.PUBLIC_ORIGIN) fail(403, 'Origin is not allowed.');
@@ -246,6 +248,7 @@ export function createWorker(authenticate = verifyAdmin) {
     },
     async scheduled(controller, env, ctx) {
       if (env.APP_MODE === 'admin') ctx.waitUntil(collectGarbage(env));
+      if (env.APP_MODE === 'public') ctx.waitUntil(cleanupContact(env).catch(() => {}));
     },
   };
 }

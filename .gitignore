@@ -28,3 +28,6 @@ uploads/
 *.ogg
 *.m4a
 *.aac
+
+# Legacy Cloudflare email configuration may contain a private destination; keep ignored.
+wrangler.contact.local.jsonc

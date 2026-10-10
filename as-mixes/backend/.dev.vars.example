@@ -1,3 +1,9 @@
 # Never put real secrets in a tracked file. Production: wrangler secret put ADMIN_EMAIL --config wrangler.admin.jsonc
 ADMIN_EMAIL=owner@example.com
 # Local JWT verification is NOT bypassed. Use automated tests for the offline workflow.
+# Contact values must be configured as secrets on the PUBLIC Worker, never in vars or frontend code.
+# RESEND_API_KEY=
+# CONTACT_RECIPIENT=
+# TURNSTILE_SECRET=
+# CONTACT_RATE_SECRET=
+# Automated tests mock both providers and require none of these real values.

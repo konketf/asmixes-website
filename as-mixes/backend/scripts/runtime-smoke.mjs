@@ -20,9 +20,14 @@ const mf = new Miniflare(convertV4MiniflareOptions({ workers: [
 try {
   await mf.ready;
   const db = await mf.getD1Database('DB', 'admin');
-  const schema = await readFile(new URL('../migrations/0001_portfolio.sql', import.meta.url), 'utf8');
+  const schema = (await readFile(new URL('../migrations/0001_portfolio.sql', import.meta.url), 'utf8')) + '\n' + (await readFile(new URL('../migrations/0002_contact_limits.sql', import.meta.url), 'utf8'));
   for (const sql of schema.split(';').filter(value => value.trim())) await db.prepare(sql).run();
   const admin = await mf.getWorker('admin'), publicWorker = await mf.getWorker('public');
+  // Contact configuration is intentionally absent: production code must fail closed.
+  const contact = await publicWorker.fetch('https://public.example.workers.dev/api/contact', { method: 'POST', headers: { Origin: 'https://konketf.github.io', 'Content-Type': 'application/json' }, body: '{}' });
+  assert.equal(contact.status, 503);
+  const preflight = await publicWorker.fetch('https://public.example.workers.dev/api/contact', { method: 'OPTIONS', headers: { Origin: 'https://konketf.github.io', 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type' } });
+  assert.equal(preflight.status, 204);
   const jwt = await new SignJWT({ email: 'owner@example.com' }).setProtectedHeader({ alg: 'RS256', kid: 'runtime-test' }).setIssuer('https://test-team.cloudflareaccess.com').setAudience('runtime-audience').setSubject('owner').setIssuedAt().setExpirationTime('5m').sign(privateKey);
   const call = async (path, method = 'GET', body, revision) => {
     const headers = { 'Cf-Access-Jwt-Assertion': jwt, Origin: origin, 'X-AS-Mixes-Request': '1' };

@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="assets/portfolio.css">
   <script src="assets/site.js" defer></script>
   <script src="assets/portfolio-config.js" defer></script>
+  <script src="assets/contact.js" defer></script>
   <script src="assets/portfolio.js" defer></script>
 </head>
 
@@ -39,9 +40,10 @@
     <section class="about section wrap" id="about" aria-labelledby="about-heading">
       <div class="about-copy">
         <h2 id="about-heading">About Me</h2>
-        <p>I’m a mixing engineer focused mainly on rock and metal.</p>
-        <p>What I care about most is making a mix feel powerful, clear and balanced without sanding off what makes the song interesting in the first place. I spend a lot of time on translation too — if it only sounds good on one pair of headphones, I don’t really consider the job finished.</p>
-        <p>I like working with dense guitars, heavy drums and aggressive vocals, but I’m not trying to force every track into the same sound. The goal is to make the production feel like the best version of itself, not like one of my previous mixes.</p>
+        <p>Hey, I'm Aleksandr, a mixing engineer based in Estonia, working mainly with rock and metal.</p>
+        <p>I love working with heavy guitars, punchy drums and aggressive vocals, but what matters most to me is how everything comes together as a song. I want my mixes to sound powerful and clear without losing the character of the original performance.</p>
+        <p>I also put a lot of attention into how mixes translate between different listening systems. A mix might sound great on studio headphones, but if it falls apart on everyday speakers, there's still work to do.</p>
+        <p>I don't believe every song needs the same treatment. I approach each project individually and try to bring out what makes it interesting in the first place.</p>
       </div>
     </section>
     <div class="genre-band wrap"><span>MIXING AND MASTERING FOR HEAVY MUSIC</span>
@@ -53,7 +55,7 @@
           <p class="eyebrow">01 / THE WORK</p>
           <h2>Mixing and<br>mastering work.</h2>
         </div>
-        <p>Mixing and mastering examples.<br>Credits are listed for each project.</p>
+        <p>Mixing and mastering examples.</p>
       </div>
       <p class="demo-note">Portfolio layout preview · Illustrative projects below. Replace with your own artwork,
         credits, and audio.</p>
@@ -93,45 +95,45 @@
             <p class="eyebrow">02 / SERVICES &amp; PRICING</p>
             <h2>Mixing.<br>Mastering.</h2>
           </div>
-          <p>We agree on the work, price, and timeline<br>before I start.</p>
         </div>
-        <p class="demo-note">Prices start at the rates below and vary with project complexity. I’ll confirm the price and delivery date
-          before starting.</p>
+        <p class="demo-note">The prices below are fixed per song. I’ll confirm the delivery date before starting.</p>
         <div class="pricing-grid">
           <article class="price-card">
             <div class="service-number">01</div>
             <h3>Mixing</h3>
             <p>Multitrack mixing to get guitars, drums, bass, and vocals working together in a clear, punchy mix.</p>
-            <div class="price">from €90 <span>/ song</span></div>
+            <div class="price">€90 <span>/ song</span></div>
             <ul>
-              <li>Multitrack mixing</li>
+              <li>Multitrack mixing (Up to 60 tracks)</li>
               <li>Three rounds of revisions</li>
               <li>High-resolution stereo mix</li>
               <li>Instrumental mix on request</li>
+              <li>First mix delivered within 7 days of receiving all required files.</li>
             </ul><a href="#contact" data-service="Mixing">Discuss your mix <span>↗</span></a>
           </article>
           <article class="price-card featured">
             <div class="service-number">02 <span>MIXING + MASTERING</span></div>
             <h3>Mix + master</h3>
             <p>Mixing and stereo mastering, from your multitracks to finished WAV files ready to release.</p>
-            <div class="price">from €110 <span>/ song</span></div>
+            <div class="price">€110 <span>/ song</span></div>
             <ul>
               <li>Everything in the mixing package</li>
               <li>Stereo mastering</li>
               <li>Release-ready WAV files</li>
-              <li>Balanced levels across your record</li>
+              <li>A complete mix and master, ready for release.</li>
+              <li>First mix-master delivered within 7 days of receiving all required files.</li>
             </ul><a href="#contact" data-service="Mix + master">Discuss your project <span>↗</span></a>
           </article>
           <article class="price-card">
             <div class="service-number">03</div>
             <h3>Mastering</h3>
-            <p>Stereo mastering to balance tone and level, check how your mix translates, and prepare the final files.</p>
-            <div class="price">from €40 <span>/ song</span></div>
+            <p>Final tonal balancing, dynamics and loudness optimization. Delivered as a release-ready stereo WAV file. Album sequencing and DDP authoring are not included.</p>
+            <div class="price">€30 <span>/ song</span></div>
             <ul>
               <li>Stereo mastering</li>
               <li>Three rounds of revisions</li>
               <li>24-bit WAV delivery</li>
-              <li>Album sequencing on request</li>
+              <li>Initial master delivered in 3 days</li>
             </ul><a href="#contact" data-service="Mastering">Discuss your master <span>↗</span></a>
           </article>
         </div>
@@ -152,9 +154,7 @@
       <div>
         <p class="eyebrow">03 / CONTACT</p>
         <h2>Tell me about<br><em>your project.</em></h2>
-        <p>Tell me about your project, track count and deadline, and I’ll get back to you with a quote.</p><a
-          class="email" href="mailto:hello@example.com">hello@example.com <span aria-hidden="true">↗</span></a>
-        <p class="demo-note">Demo contact address · Replace before accepting enquiries.</p>
+        <p>Rather send a message directly? <a href="mailto:contact@asmixes.com">contact@asmixes.com</a></p>
       </div>
       <form id="contact-form">
         <div class="form-row"><label>Your name<input name="name" autocomplete="name" placeholder="Name / band" required
@@ -166,16 +166,15 @@
             <option>Mastering</option>
             <option>Let’s figure it out</option>
           </select></label>
-        <div class="form-row">
-          <label>Tracks per mix (optional)<input name="trackCount" type="number" min="1" step="1" placeholder="Number of audio tracks in a mix"></label>
-          <label>Deadline (optional)<input name="deadline" type="text" placeholder="A date, timeframe, or flexible" maxlength="100"></label>
-        </div>
+        <label>Tracks per mix (optional, maximum 60)<input name="trackCount" type="number" min="1" max="60" step="1" placeholder="Number of audio tracks in a mix (max 60)"></label>
         <label>Tell me about the project<textarea name="message" rows="4"
             placeholder="A few details, references, and a link to your demos…" required
-            maxlength="5000"></textarea></label><button class="button" type="submit">Prepare an email <span
+            maxlength="5000"></textarea></label>
+        <div id="contact-verification" class="contact-verification"></div>
+        <button class="button" type="submit" disabled>Send message <span
             aria-hidden="true">↗</span></button>
-        <p class="form-note" id="form-status" role="status">Opens your email app with the project details. Nothing is
-          submitted through this website.</p>
+        <p class="form-note" id="form-status" role="status">Send your project details directly through this form. I'll get back to you by email.</p>
+        <noscript><p class="form-note">JavaScript is required to send this form. Please email <a href="mailto:contact@asmixes.com">contact@asmixes.com</a> directly.</p></noscript>
       </form>
     </section>
   </main>
