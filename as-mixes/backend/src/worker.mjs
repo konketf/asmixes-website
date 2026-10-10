@@ -1,5 +1,6 @@
 import { HttpError, verifyAdmin, requireSameOrigin } from './auth.mjs';
 import { handleContact, cleanupContact } from './contact.mjs';
+import { requireEdgeLimit } from './rate-limit.mjs';
 import { validId, metadata, readJSON, readLimited, inspectFile, AUDIO_LIMIT, ARTWORK_LIMIT, PROJECT_LIMIT } from './validation.mjs';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
@@ -60,14 +61,17 @@ async function media(request, env, id, admin) {
     WHERE a.id = ? AND a.state = 'ready' AND p.deleted_at IS NULL
     AND (p.audio_id = a.id OR p.artwork_id = a.id) ${admin ? '' : 'AND p.published = 1'}`, id).first();
   if (!asset) fail(404, 'Media not found.');
-  const head = await env.MEDIA.head(asset.object_key);
-  if (!head) fail(404, 'Media not found.');
+  // Size was reserved from the validated upload before R2 put; keys are immutable.
+  const size = asset.byte_size;
   let range;
-  try { range = parseRange(request.headers.get('Range'), head.size); }
-  catch (error) { if (error.status === 416) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${head.size}` } }); throw error; }
-  const headers = new Headers({ 'Content-Type': asset.content_type, 'Accept-Ranges': 'bytes', 'Content-Length': String(range?.length ?? head.size), 'Content-Disposition': 'inline' });
-  if (range) headers.set('Content-Range', `bytes ${range.offset}-${range.offset + range.length - 1}/${head.size}`);
-  if (request.method === 'HEAD') return new Response(null, { status: range ? 206 : 200, headers });
+  try { range = parseRange(request.headers.get('Range'), size); }
+  catch (error) { if (error.status === 416) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } }); throw error; }
+  const headers = new Headers({ 'Content-Type': asset.content_type, 'Accept-Ranges': 'bytes', 'Content-Length': String(range?.length ?? size), 'Content-Disposition': 'inline' });
+  if (range) headers.set('Content-Range', `bytes ${range.offset}-${range.offset + range.length - 1}/${size}`);
+  if (request.method === 'HEAD') {
+    if (!await env.MEDIA.head(asset.object_key)) fail(404, 'Media not found.');
+    return new Response(null, { status: range ? 206 : 200, headers });
+  }
   const object = await env.MEDIA.get(asset.object_key, range ? { range } : undefined);
   if (!object) fail(404, 'Media not found.');
   return new Response(object.body, { status: range ? 206 : 200, headers });
@@ -199,6 +203,8 @@ export function createWorker(authenticate = verifyAdmin) {
             return protect(new Response(null, { status: 204 }), corsOrigin);
           }
           if (!['GET', 'HEAD'].includes(request.method)) fail(405, 'Read-only endpoint.');
+          if (url.pathname !== '/api/projects' && !/^\/media\/[^/]+$/.test(url.pathname)) fail(404, 'Not found.');
+          await requireEdgeLimit(request, env, 'READ');
           let response;
           if (url.pathname === '/api/projects') {
             const { results } = await statement(env, `SELECT * FROM projects WHERE published=1 AND ${active} ORDER BY position,created_at,id LIMIT 100`).all();
@@ -243,7 +249,9 @@ export function createWorker(authenticate = verifyAdmin) {
       } catch (error) {
         const status = error instanceof HttpError ? error.status : 500;
         if (status === 500) console.error('Portfolio request failed.');
-        return protect(json({ error: status === 500 ? 'The request could not be completed. Try again.' : error.message }, status), corsOrigin);
+        const response = json({ error: status === 500 ? 'The request could not be completed. Try again.' : error.message }, status);
+        if (status === 429) response.headers.set('Retry-After', '60');
+        return protect(response, corsOrigin);
       }
     },
     async scheduled(controller, env, ctx) {

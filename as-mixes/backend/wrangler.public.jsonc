@@ -3,7 +3,14 @@
   "main": "src/worker.mjs",
   "compatibility_date": "2026-10-08",
   "workers_dev": true,
+  "routes": [{ "pattern": "api.asmixes.com", "custom_domain": true }],
   "preview_urls": false,
+  "ratelimits": [
+    { "name": "CONTACT_IP_RATE", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+    { "name": "CONTACT_TOTAL_RATE", "namespace_id": "1002", "simple": { "limit": 120, "period": 60 } },
+    { "name": "READ_IP_RATE", "namespace_id": "1003", "simple": { "limit": 240, "period": 60 } },
+    { "name": "READ_TOTAL_RATE", "namespace_id": "1004", "simple": { "limit": 3000, "period": 60 } }
+  ],
   "vars": {
     "APP_MODE": "public", "PUBLIC_ORIGIN": "https://asmixes.com",
     "CONTACT_ALLOWED_ORIGINS": "[\"https://asmixes.com\",\"https://www.asmixes.com\"]",

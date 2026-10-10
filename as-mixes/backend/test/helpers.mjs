@@ -12,6 +12,11 @@ export async function token(overrides = {}, key = privateKey, omit = []) {
   for (const field of omit) delete payload[field];
   return new SignJWT(payload).setProtectedHeader({ alg: 'RS256', kid: 'test-key' }).sign(key);
 }
+export const edgeBindings = () => Object.fromEntries(
+  ['CONTACT_IP_RATE', 'CONTACT_TOTAL_RATE', 'READ_IP_RATE', 'READ_TOTAL_RATE']
+    .map(name => [name, { async limit() { return { success: true }; } }])
+);
+
 export class D1SQLite {
   constructor() {
     this.db = new DatabaseSync(':memory:');
@@ -51,14 +56,14 @@ export class MemoryR2 {
   async delete(key) { if (this.failDelete) throw new Error('Simulated deletion failure.'); this.deletions.push(key); this.objects.delete(key); }
 }
 export async function fixture(t) {
-  const env = { APP_MODE: 'admin', DB: new D1SQLite(), MEDIA: new MemoryR2(), ADMIN_ORIGIN: 'https://admin.example.workers.dev', PUBLIC_ORIGIN: 'https://konketf.github.io', ACCESS_TEAM_DOMAIN: 'test-team.cloudflareaccess.com', ACCESS_AUD: 'test-audience', ADMIN_EMAIL: 'owner@example.com', STORAGE_QUOTA_BYTES: '1073741824' };
+  const env = { ...edgeBindings(), APP_MODE: 'admin', DB: new D1SQLite(), MEDIA: new MemoryR2(), ADMIN_ORIGIN: 'https://admin.example.workers.dev', PUBLIC_ORIGIN: 'https://konketf.github.io', ACCESS_TEAM_DOMAIN: 'test-team.cloudflareaccess.com', ACCESS_AUD: 'test-audience', ADMIN_EMAIL: 'owner@example.com', STORAGE_QUOTA_BYTES: '1073741824' };
   const jwt = await token();
   const pending = [];
   const ctx = { waitUntil(promise) { pending.push(promise); } };
   const worker = createWorker((request, values) => verifyAdmin(request, values, keys));
   const call = async (path, { method = 'GET', body, headers = {}, anonymous = false, mode = 'admin', flush = true } = {}) => {
     const origin = mode === 'admin' ? env.ADMIN_ORIGIN : 'https://public.example.workers.dev';
-    const requestHeaders = new Headers(headers);
+    const requestHeaders = new Headers({ 'CF-Connecting-IP': '192.0.2.1', ...headers });
     if (mode === 'admin' && !anonymous) requestHeaders.set('Cf-Access-Jwt-Assertion', jwt);
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
       if (!requestHeaders.has('Origin')) requestHeaders.set('Origin', env.ADMIN_ORIGIN);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { D1SQLite } from './helpers.mjs';
+import { D1SQLite, edgeBindings } from './helpers.mjs';
 import { createContactHandler, cleanupContact } from '../src/contact.mjs';
 import { createWorker } from '../src/worker.mjs';
 
@@ -11,13 +11,13 @@ function setup(t, options = {}) {
   db.db.exec(readFileSync(new URL('../migrations/0002_contact_limits.sql', import.meta.url), 'utf8'));
   t.after(() => db.db.close());
   const sent = [], verified = [];
-  const env = { APP_MODE: 'public', PUBLIC_ORIGIN: 'https://konketf.github.io', CONTACT_ALLOWED_ORIGINS: '["https://konketf.github.io","https://asmixes.com"]', DB: db,
+  const env = { ...edgeBindings(), APP_MODE: 'public', PUBLIC_ORIGIN: 'https://konketf.github.io', CONTACT_ALLOWED_ORIGINS: '["https://konketf.github.io","https://asmixes.com"]', DB: db,
     TURNSTILE_SECRET: 'test-only-secret', CONTACT_RATE_SECRET: 'test-only-hmac-secret-at-least-32-characters',
     RESEND_API_KEY: 'test-only-resend-key', CONTACT_RECIPIENT: 'recipient@example.com' };
   const handler = createContactHandler(async (url, init) => {
     if (url === 'https://api.resend.com/emails') {
       assert.equal(init.headers.Authorization, `Bearer ${env.RESEND_API_KEY}`);
-      assert.equal(init.redirect, 'error');
+      assert.equal(init.redirect, 'manual');
       assert.equal(init.method, 'POST');
       sent.push(JSON.parse(init.body));
       if (options.emailFailure) throw new Error('private provider diagnostic recipient@example.com');

@@ -1,5 +1,6 @@
 import { HttpError } from './auth.mjs';
 import { readLimited } from './validation.mjs';
+import { requireEdgeLimit } from './rate-limit.mjs';
 
 const encoder = new TextEncoder();
 const invalid = () => { throw new HttpError(400, 'Check the form fields and try again.'); };
@@ -45,7 +46,7 @@ function limitValue(value, fallback, max) {
 }
 
 export async function cleanupContact(env) {
-  // Indexed, bounded cleanup; repeat hourly and on contact requests. Expired rows never apply.
+  // Indexed, bounded cleanup runs only on the hourly cron. Expired rows never apply.
   await env.DB.prepare('DELETE FROM contact_limits WHERE key IN (SELECT key FROM contact_limits WHERE expires_at <= ? LIMIT 500)').bind(Date.now()).run();
 }
 
@@ -69,11 +70,11 @@ async function ipLimit(request, env, now) {
 export function createContactHandler(outboundFetch = fetch) {
   return async function contact(request, env) {
     let allowedOrigin;
-    const respond = (body, status = 200) => {
+    const respond = (body, status = 200, retryAfter = '600') => {
       const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Vary': 'Origin', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
         'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'", 'X-Frame-Options': 'DENY', 'Strict-Transport-Security': 'max-age=31536000', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()' };
       if (allowedOrigin) Object.assign(headers, { 'Access-Control-Allow-Origin': allowedOrigin, 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type' });
-      if (status === 429) headers['Retry-After'] = '600';
+      if (status === 429) headers['Retry-After'] = retryAfter;
       return new Response(status === 204 ? null : JSON.stringify(body), { status, headers });
     };
     try {
@@ -88,7 +89,7 @@ export function createContactHandler(outboundFetch = fetch) {
       if (typeof env.RESEND_API_KEY !== 'string' || !/^[A-Za-z0-9_-]{10,256}$/.test(env.RESEND_API_KEY) || !validMailbox(env.CONTACT_RECIPIENT) || !env.TURNSTILE_SECRET || !env.CONTACT_RATE_SECRET || env.CONTACT_RATE_SECRET.length < 32 || !env.DB) unavailable();
       if (request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() !== 'application/json' || request.headers.has('Content-Encoding')) throw new HttpError(415, 'This request is not allowed.');
       const now = Date.now();
-      await cleanupContact(env);
+      await requireEdgeLimit(request, env, 'CONTACT');
       await ipLimit(request, env, now);
       let input;
       try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await readLimited(request, 24 * 1024))); }
@@ -109,7 +110,7 @@ export function createContactHandler(outboundFetch = fetch) {
       // Plain text only; customer-controlled content never becomes a MIME header.
       try {
         const response = await outboundFetch('https://api.resend.com/emails', {
-          method: 'POST', redirect: 'error', signal: AbortSignal.timeout(8000),
+          method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(8000),
           headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ from: 'contact@asmixes.com', to: [env.CONTACT_RECIPIENT], subject: 'AS Mixes — Project enquiry', reply_to: data.email,
             text: [`Name / band: ${data.name}`, `Email: ${data.email}`, `Service: ${data.service}`, ...(data.trackCount ? [`Audio tracks per mix: ${data.trackCount}`] : []), '', data.message].join('\n') }),
@@ -121,7 +122,7 @@ export function createContactHandler(outboundFetch = fetch) {
       return respond({ accepted: true, message: "Thanks — your message has been accepted. I'll get back to you by email." });
     } catch (error) {
       // Never log request bodies, tokens, provider errors or personal information.
-      return respond({ error: error instanceof HttpError ? error.message : 'Messages cannot be sent right now. Please try again later or email contact@asmixes.com.' }, error instanceof HttpError ? error.status : 503);
+      return respond({ error: error instanceof HttpError ? error.message : 'Messages cannot be sent right now. Please try again later or email contact@asmixes.com.' }, error instanceof HttpError ? error.status : 503, error.retryAfter);
     }
   };
 }

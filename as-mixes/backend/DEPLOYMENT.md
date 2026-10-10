@@ -201,7 +201,7 @@ No private deployment config or `send_email` binding is used anymore. Any old `w
 
 ### Canonical domain and origins
 
-PUBLIC_ORIGIN is https://asmixes.com. CONTACT_ALLOWED_ORIGINS contains only https://asmixes.com and https://www.asmixes.com. Keep the existing www-to-apex redirect. GitHub-hostname contact submissions are deliberately excluded. Worker URLs are unchanged. These are local settings until an approved public Worker deployment.
+PUBLIC_ORIGIN is https://asmixes.com. CONTACT_ALLOWED_ORIGINS contains only https://asmixes.com and https://www.asmixes.com. Keep the existing www-to-apex redirect. GitHub-hostname contact submissions are deliberately excluded. The public frontend now targets https://api.asmixes.com; the admin hostname is unchanged. The workers.dev public endpoint remains enabled for migration fallback. These repository changes take effect only after the appropriate approved deployment.
 
 ### Limits, privacy and provider behavior
 
@@ -262,3 +262,39 @@ Worker rollback restores the selected code/configuration version, not D1/R2 cont
 ### Local verification
 
 Run `npm test`, `npm run check`, `npm run build`, `npm run test:runtime`, `npm run check:artifacts` and `npm audit`. The artifact scanner is heuristic; it checks normal/fallback frontend and generated Worker bundles for credential patterns, unexpected email addresses, links, audio and environment files without printing matched values. It does not read real secret values or guarantee the absence of arbitrary encoded secrets. Contact tests use in-memory SQLite, mocked HTTP responses for Resend/Siteverify, and a simulated browser form. They cover fixed recipient/sender, REST Authorization and `reply_to`, invalid/header-injection/relay inputs, body size, Turnstile failures and hostname/action mismatches, Resend authorization/domain/quota/server failures, malformed responses, timeouts/network exceptions, atomic concurrent limits, expiry cleanup, daily-cap messaging, message retention and retry/duplicate-click handling. Deployment tests check actual production origins, fallback contact rejection, published audio byte ranges, draft privacy and public artifact configuration. Existing admin, portfolio, audio ranges/privacy and local Workers runtime tests remain. Runtime smoke checks contact preflight and fail-closed missing secrets. Actual DNS, sender verification, widget rendering, provider acceptance and inbox placement require separately approved live verification.
+
+
+### Public rate limits and CSP rollout (requires separate deployment approval)
+
+No dashboard change is needed to declare Workers rate-limit bindings: the public Wrangler config and generated fallback config carry them. Before an approved deployment, verify namespace IDs 1001?1004 are unused by unrelated Workers in this account, or choose four unused positive integers. Namespace counters are account-shared when IDs match.
+
+| Traffic | Per IP / minute | All clients per Cloudflare location / minute |
+| --- | ---: | ---: |
+| Contact POST | 10 | 120 |
+| Portfolio and media GET/HEAD combined | 240 | 3000 |
+
+Read limits leave room for the 100-artwork portfolio, audio range requests, repeated seeking and shared networks. Contact has separate capacity, so browsing cannot spend the contact budget. IP limits can affect shared proxies/NATs; adjust only after observing legitimate traffic. Rejections return 429, no-store and Retry-After; missing protection returns 503. These edge counters are approximate and location-local, not a worldwide request or billing cap. They execute inside the Worker, so rejected requests still invoke it. The existing D1 limits (5 attempts/IP/10 minutes, 100 verified sends/UTC day) remain unchanged.
+
+The [Workers Rate Limiting API](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) is configured in code and applies to both api.asmixes.com and the retained workers.dev endpoint. Account entitlement and availability must still be verified during an approved rollout; local builds do not establish production entitlement. The user has already attached api.asmixes.com to the public Worker. For protection before Worker invocation, separately approve zone WAF rate-limit rules matching hostname api.asmixes.com with POST /api/contact and GET/HEAD /media/* (plus /api/projects). Zone rules do not cover the retained workers.dev fallback; Worker binding limits still apply on both hosts. Keep that fallback available during migration. Do not use interactive challenges on audio/API responses. [WAF rule availability and features](https://developers.cloudflare.com/waf/rate-limiting-rules/) depend on the plan; the Free plan has one rate-limit rule, so independent contact/media zone rules may require a higher plan. No zone/plan/DNS changes have been made.
+
+The GitHub Pages frontend applies CSP via early HTML meta tags, included by the existing dist-only workflow; it does not rely on unsupported _headers files or Worker API headers. It uses Cloudflare's documented [Turnstile script/frame allowlist](https://developers.cloudflare.com/turnstile/reference/content-security-policy/). No GitHub setting change is required. A CSP response header including frame-ancestors would require a separately approved hosting/proxy change; [frame-ancestors cannot be set in meta](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors).
+
+Before release, verify in a real desktop/mobile browser: no CSP console violations; navigation, styling and animated/reduced-motion waveform; portfolio images; audio start/pause and seeks near the middle/end; Turnstile rendering, expiry/retry and a separately approved real contact submission. Local tests cover mocked contact/Turnstile responses, real local Worker bindings, range transport and static CSP/dependency compatibility. They do not establish actual widget rendering, codec playback, live edge accuracy, sender delivery or production account limits. Do not deliberately exhaust production limits to test them.
+
+
+### Migrate the public frontend to api.asmixes.com
+
+The custom domain is already attached and responding, as confirmed by the user. The repository now targets `https://api.asmixes.com` for POST `/api/contact`, GET `/api/projects`, and GET/HEAD `/media/<asset-id>`. CSP permits only this new API/media origin. The public Wrangler configuration records `{ "pattern": "api.asmixes.com", "custom_domain": true }` and explicitly retains `workers_dev: true`. Generated fallback configuration inherits both settings. See [Cloudflare Custom Domains configuration](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/).
+
+CORS remains `PUBLIC_ORIGIN=https://asmixes.com`, with contact origins `https://asmixes.com` and `https://www.asmixes.com`. These identify the requesting website, not the API host. Do not add api.asmixes.com as a caller origin or broaden the allowlist. Turnstile continues to validate the website's hostname/action; no new Turnstile allowed hostname or secret is required for this API-host migration. Admin origin, Access policy, D1, R2, Resend secrets and rate-limit namespaces are unchanged.
+
+Deployment steps (instructions only; none executed):
+
+1. Review these local changes together with the existing uncommitted security changes. After separately approving and placing the reviewed release on `main`, use the existing GitHub Actions **Publish AS Mixes to GitHub Pages** workflow with **fallback unchecked**. It publishes `as-mixes/dist`. Equivalent command, when GitHub CLI is available: `gh workflow run pages.yml --repo konketf/asmixes-website --ref main -F fallback=false`. Running it before the release reaches main would publish the previous code.
+2. No Worker deployment is required solely to switch frontend traffic, since the custom domain is attached to the same live Worker. If the reviewed backend/security changes also need rollout, separately approve and run `npm.cmd run deploy:public` from `as-mixes/backend`. Wrangler will reconcile the declared custom domain while preserving workers.dev. Do not deploy the admin Worker for this migration.
+3. Verify the live page loads portfolio/artwork/audio from api.asmixes.com with no CSP/CORS errors; test playback and seeking, contact preflight and an approved real enquiry with Turnstile. Verify the original `https://as-mixes-portfolio.aleksandr-sinitson.workers.dev` remains reachable. No new DNS, GitHub, storage, Access or email setting is required based on the already attached domain; live settings were not independently inspected.
+4. Any approved WAF rule must match hostname `api.asmixes.com`, URI path `/api/contact`, method `POST`. Review any existing API hostname matchers. Keep workers.dev enabled during migration; it bypasses zone WAF rules but retains application protections. No WAF settings were changed.
+
+For frontend rollback, restore the previous public API origin in **both** `dist/assets/portfolio-config.js` and the CSP in `dist/index.html`, then publish that reviewed frontend. The old endpoint remains enabled; automatic retry to it is intentionally not added, avoiding duplicate contact messages. The generated direct-email fallback is a separate recovery mode and also uses the new API origin for portfolio/media.
+
+Migration validation uses both hostnames against the local Worker for CORS, published media and byte ranges, and uses api.asmixes.com in local workerd contact/media requests with mocked outbound services. Real browser widget rendering, codec playback, WAF behavior, DNS/TLS and inbox delivery remain live release checks.
