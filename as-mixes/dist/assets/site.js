@@ -23,3 +23,16 @@ document.querySelectorAll('[data-service]').forEach(link => {
     document.querySelector('#service').value = link.dataset.service;
   });
 });
+
+// Only update the header class when crossing the top of the page.
+const header = document.querySelector('.header');
+let headerScrolled;
+function syncHeader() {
+  const scrolled = window.scrollY > 0;
+  if (scrolled !== headerScrolled) {
+    header.classList.toggle('is-scrolled', scrolled);
+    headerScrolled = scrolled;
+  }
+}
+window.addEventListener('scroll', syncHeader, { passive: true });
+syncHeader();
