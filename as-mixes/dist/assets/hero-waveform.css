@@ -1,0 +1,23 @@
+/* Decorative second grid item: leaves the existing hero geometry untouched. */
+.hero-waveform {
+  display: block;
+  width: 118%;
+  max-width: calc(100% + 88px);
+  min-width: 0;
+  height: auto;
+  aspect-ratio: 1.79;
+  align-self: center;
+  justify-self: center;
+  pointer-events: none;
+  opacity: .70;
+  color: var(--accent);
+}
+
+/* Keep the enlarged canvas and its glow clear of the copy as the gap narrows. */
+@media (min-width: 901px) and (max-width: 1050px) {
+  .hero-waveform { max-width: calc(100% + 40px); }
+}
+
+@media (max-width: 900px) {
+  .hero-waveform { display: none; }
+}

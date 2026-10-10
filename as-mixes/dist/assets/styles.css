@@ -3,3 +3,10 @@
 .about{border-top:1px solid var(--line)}.about-copy{max-width:640px}.about h2{margin-bottom:25px}.about p{color:var(--muted);font-size:14px;line-height:1.8;margin-bottom:18px}.about p:last-child{margin-bottom:0}@media(max-width:760px){.about p{font-size:13px}}
 .price-card li{position:relative;padding-left:22px}.price-card li:before{position:absolute;left:0;margin-right:0}
 .contact-verification{margin:0 0 18px;max-width:100%}.contact button:disabled{opacity:.6;cursor:not-allowed}
+
+/* Secondary service clarification, kept within the pricing section. */
+.editing-note{margin-top:38px;padding-top:25px;border-top:1px solid var(--line)}
+.editing-note h3{font-size:18px;font-weight:500;letter-spacing:0;line-height:1.4;margin-bottom:14px}
+.editing-note p{max-width:680px;font-size:13px;color:var(--muted);margin-bottom:12px}
+.editing-note p:last-child{margin-bottom:0}
+.editing-note strong{font-weight:500;color:var(--text)}
