@@ -3,7 +3,7 @@
   const status = document.querySelector('#form-status');
   const button = form.querySelector('button[type="submit"]');
   const config = window.AS_MIXES_PORTFOLIO || {};
-  let widget, token = '', sending = false;
+  let widget, token = '', sending = false, pendingTheme = false;
   button.disabled = true;
   const message = text => { status.textContent = text; };
   const ready = () => { button.disabled = sending || !token; };
@@ -42,22 +42,34 @@
       form.reset();
     } catch {
       message('We could not confirm whether your message was sent. Your text is still here. Please try again or email contact@asmixes.com.');
-    } finally { sending = false; reset(); }
+    } finally { sending = false; reset(); if (pendingTheme) { pendingTheme = false; replaceWidget(); } }
   });
 
   const script = document.createElement('script');
   script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
   script.async = true;
-  script.addEventListener('load', () => {
+  const renderWidget = () => {
     try {
       widget = window.turnstile.render('#contact-verification', {
-        sitekey: config.turnstileSiteKey, action: 'contact', theme: 'dark', size: 'flexible',
+        sitekey: config.turnstileSiteKey, action: 'contact', theme: window.AS_MIXES_THEME?.theme || 'auto', size: 'flexible',
         callback: value => { token = value; ready(); },
         'expired-callback': () => { token = ''; ready(); },
         'error-callback': () => { token = ''; ready(); message('Verification is unavailable. Please retry or email contact@asmixes.com.'); },
       });
     } catch { message('Verification is unavailable. Please reload or email contact@asmixes.com.'); }
+  };
+  function replaceWidget() {
+    token = ''; ready();
+    try { window.turnstile.remove(widget); widget = undefined; renderWidget(); }
+    catch { message('Verification is unavailable. Please reload or email contact@asmixes.com.'); }
+  }
+  document.addEventListener('asmixes:themechange', () => {
+    if (widget === undefined) return;
+    // Never recreate the widget while an enquiry is in flight.
+    if (sending) { pendingTheme = true; return; }
+    replaceWidget();
   });
+  script.addEventListener('load', renderWidget);
   script.addEventListener('error', () => message('Verification could not load. Please reload or email contact@asmixes.com.'));
   document.head.append(script);
 })();

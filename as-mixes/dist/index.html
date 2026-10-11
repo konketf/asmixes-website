@@ -6,11 +6,14 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self'; img-src 'self' https://api.asmixes.com; media-src https://api.asmixes.com; connect-src https://api.asmixes.com; frame-src https://challenges.cloudflare.com; base-uri 'none'; object-src 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="AS Mixes. Freelance mixing and mastering for rock and metal.">
-  <meta name="theme-color" content="#171817">
+  <meta name="theme-color" content="#171817" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f2eb" media="(prefers-color-scheme: light)">
   <title>AS Mixes — Mixing &amp; Mastering</title>
+  <script src="assets/theme.js"></script>
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/portfolio.css">
   <link rel="stylesheet" href="assets/hero-waveform.css">
+  <link rel="stylesheet" href="assets/public-design.css">
   <script src="assets/site.js" defer></script>
   <script src="assets/hero-waveform.js" defer></script>
   <script src="assets/portfolio-config.js" defer></script>
@@ -18,7 +21,7 @@
   <script src="assets/portfolio.js" defer></script>
 </head>
 
-<body>
+<body class="public-site">
   <a class="skip" href="#main">Skip to content</a>
   <header class="header wrap">
     <a class="brand" href="#home" aria-label="AS Mixes home"><span class="brand-mark" aria-hidden="true">≋</span> AS
@@ -27,7 +30,14 @@
         aria-hidden="true">＋</span></button>
     <nav id="navigation" aria-label="Main navigation"><a href="#home">Home</a><a href="#work">Work</a><a
         href="#services">Services / Pricing</a><a class="nav-contact" href="#contact">Let’s talk <span
-          aria-hidden="true">↗</span></a></nav>
+          aria-hidden="true">↗</span></a>
+      <fieldset class="theme-switch" id="theme-switch" disabled>
+        <legend>Color theme</legend>
+        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="system" checked><span>System</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+      </fieldset>
+    </nav>
   </header>
   <main id="main">
     <section class="hero wrap" id="home">
@@ -41,18 +51,6 @@
       </div>
       <canvas class="hero-waveform" aria-hidden="true"></canvas>
     </section>
-    <section class="about section wrap" id="about" aria-labelledby="about-heading">
-      <div class="about-copy">
-        <h2 id="about-heading">About Me</h2>
-        <p>Hey, I'm Aleksandr, a mixing engineer based in Estonia, working mainly with rock and metal.</p>
-        <p>I love working with heavy guitars, punchy drums and aggressive vocals, but what matters most to me is how everything comes together as a song. I want my mixes to sound powerful and clear without losing the character of the original performance.</p>
-        <p>I also put a lot of attention into how mixes translate between different listening systems. A mix might sound great on studio headphones, but if it falls apart on everyday speakers, there's still work to do.</p>
-        <p>I don't believe every song needs the same treatment. I approach each project individually and try to bring out what makes it interesting in the first place.</p>
-      </div>
-    </section>
-    <div class="genre-band wrap"><span>MIXING AND MASTERING FOR HEAVY MUSIC</span>
-      <div>ROCK <b>/</b> METAL <b>/</b> ALTERNATIVE <b>/</b> HARDCORE</div>
-    </div>
     <section class="section wrap" id="work">
       <div class="section-head">
         <div>
@@ -92,6 +90,18 @@
         </article>
       </div>
     </section>
+    <section class="about section wrap" id="about" aria-labelledby="about-heading">
+      <div class="about-copy">
+        <h2 id="about-heading">About Me</h2>
+        <p>Hey, I'm Aleksandr, a mixing engineer based in Estonia, working mainly with rock and metal.</p>
+        <p>I love working with heavy guitars, punchy drums and aggressive vocals, but what matters most to me is how everything comes together as a song. I want my mixes to sound powerful and clear without losing the character of the original performance.</p>
+        <p>I also put a lot of attention into how mixes translate between different listening systems. A mix might sound great on studio headphones, but if it falls apart on everyday speakers, there's still work to do.</p>
+        <p>I don't believe every song needs the same treatment. I approach each project individually and try to bring out what makes it interesting in the first place.</p>
+      </div>
+    </section>
+    <div class="genre-band wrap"><span>MIXING AND MASTERING FOR HEAVY MUSIC</span>
+      <div>ROCK <b>/</b> METAL <b>/</b> ALTERNATIVE <b>/</b> HARDCORE</div>
+    </div>
     <section class="services-section" id="services">
       <div class="section wrap">
         <div class="section-head">

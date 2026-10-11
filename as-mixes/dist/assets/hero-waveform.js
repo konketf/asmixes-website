@@ -81,6 +81,8 @@
   }).observe(canvas);
   document.addEventListener('visibilitychange', sync);
   reducedMotion.addEventListener('change', sync);
+  // Redraw the theme-dependent accent even when reduced motion keeps it static.
+  document.addEventListener('asmixes:themechange', sync);
   compact.addEventListener('change', resize);
   resize();
 })();
