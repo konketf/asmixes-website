@@ -23,6 +23,8 @@ The repository-root `.github/workflows/pages.yml` uploads only `as-mixes/dist` b
 
 ## Customize before client use
 
-The site uses the AS Mixes identity and fixed service prices. Replace the illustrative portfolio entries with your own credited artwork and audio using the private dashboard. The contact form submits to the public Worker's `/api/contact` after mandatory Turnstile verification. It stays disabled until a real public Turnstile site key is configured. Resend domain verification, Worker secrets, and the counter migration are also required; see [contact setup](backend/DEPLOYMENT.md#contact-form-email-delivery). The private recipient and API key are never stored in the frontend or tracked configuration.
+The site uses the AS Mixes identity and fixed service prices. Publish your credited artwork and audio using the private dashboard. The public portfolio shows a loading message until the API responds, an empty state when no projects are published, and a retry option on failure (including a 15-second timeout). The contact form submits to the public Worker's `/api/contact` after mandatory Turnstile verification. It stays disabled until a real public Turnstile site key is configured. Resend domain verification, Worker secrets, and the counter migration are also required; see [contact setup](backend/DEPLOYMENT.md#contact-form-email-delivery). The private recipient and API key are never stored in the frontend or tracked configuration.
 
 Accessibility includes semantic landmarks, labelled controls, a skip link, visible keyboard focus, reduced-motion support, and an accessible mobile menu.
+
+Frontend portfolio regression tests use synthetic responses and run with `cd backend && node --test test/portfolio-ui.test.mjs`, or as part of `npm test`.

@@ -59,36 +59,12 @@
         </div>
         <p>Mixing and mastering examples.</p>
       </div>
-      <p class="demo-note">Portfolio layout preview · Illustrative projects below. Replace with your own artwork,
-        credits, and audio.</p>
-      <div class="work-grid">
-        <article>
-          <div class="cover cover-one"><span>01 / ALTERNATIVE METAL</span>
-            <div class="cover-symbol">II</div><strong>FAULT<br>LINES</strong><small>PORTFOLIO PLACEHOLDER</small>
-          </div>
-          <div class="work-info">
-            <h3>Fault Lines</h3><span>Mixing + mastering</span>
-          </div>
-        </article>
-        <article>
-          <div class="cover cover-two"><span>02 / POST-HARDCORE</span>
-            <div class="orbit" aria-hidden="true"></div><strong>THE<br>AFTERLIGHT</strong><small>PORTFOLIO
-              PLACEHOLDER</small>
-          </div>
-          <div class="work-info">
-            <h3>The Afterlight</h3><span>Mixing + mastering</span>
-          </div>
-        </article>
-        <article>
-          <div class="cover cover-three"><span>03 / HEAVY ROCK</span>
-            <div class="cover-lines" aria-hidden="true"></div><strong>STATIC<br>GROUND</strong><small>PORTFOLIO
-              PLACEHOLDER</small>
-          </div>
-          <div class="work-info">
-            <h3>Static Ground</h3><span>Mastering</span>
-          </div>
-        </article>
+      <div class="portfolio-state">
+        <p id="portfolio-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">Loading audio previews...</p>
+        <button class="button" id="portfolio-retry" type="button" hidden>Retry audio previews</button>
       </div>
+      <noscript><p class="portfolio-noscript">Enable JavaScript to load published audio previews.</p></noscript>
+      <div class="work-grid" aria-busy="true"></div>
     </section>
     <section class="about section wrap" id="about" aria-labelledby="about-heading">
       <div class="about-copy">
