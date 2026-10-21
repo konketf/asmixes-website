@@ -6,3 +6,9 @@
 .public-site .portfolio-state [hidden] { display: none; }
 .public-site .portfolio-state .button:disabled { opacity: .6; cursor: wait; }
 .public-site .portfolio-state:has(+ noscript > p) { display: none; }
+
+/* Keep the cover's reserved square and the player intact during image failures. */
+.portfolio-cover img[hidden], .artwork-status[hidden] { display: none; }
+.artwork-status { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; background: var(--panel); text-align: center; }
+.artwork-status p { margin: 0; color: var(--muted); }
+.artwork-status .button:disabled { opacity: .6; cursor: wait; }

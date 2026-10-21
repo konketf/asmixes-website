@@ -12,7 +12,7 @@ const project = { title: '<b>Synthetic recording</b>', artist: 'Test artist', cr
 function ui(result, config = { apiOrigin: 'https://api.example.test' }) {
   const document = { activeElement: null };
   function element(tag) {
-    return { tag, children: [], attributes: {}, listeners: {}, hidden: false, textContent: '', pauses: 0,
+    return { tag, children: [], attributes: {}, listeners: {}, hidden: false, textContent: '', pauses: 0, isConnected: true,
       append(...nodes) { this.children.push(...nodes); },
       replaceChildren(...nodes) { this.children = nodes; },
       setAttribute(key, value) { this.attributes[key] = value; },
@@ -28,7 +28,7 @@ function ui(result, config = { apiOrigin: 'https://api.example.test' }) {
   const requests = [], timers = new Map();
   let timerId = 0;
   const done = vm.runInNewContext(source, { document, window: { AS_MIXES_PORTFOLIO: config }, URL, AbortController,
-    setTimeout(fn, delay) { assert.equal(delay, 15000); timers.set(++timerId, fn); return timerId; },
+    setTimeout(fn, delay) { assert.ok([15000, 1500].includes(delay)); timers.set(++timerId, fn); return timerId; },
     clearTimeout(id) { timers.delete(id); },
     fetch: async (url, init) => { requests.push({ url, init }); if (result instanceof Error) throw result; return typeof result === 'function' ? result(init) : result; },
   });
@@ -119,4 +119,52 @@ test('missing or invalid API configuration fails closed', async () => {
     assert.equal(f.requests.length, 0); assert.equal(f.grid.children.length, 0);
     assert.match(f.status.textContent, /could not be loaded/); assert.equal(f.retry.hidden, false);
   }
+});
+
+test('artwork network failure retries once and recovers without replacing players or fetching metadata', async () => {
+  const f = ui(Response.json({ projects: [project, { ...project, title: 'Second' }] })); await f.done;
+  const [image, second] = f.grid.querySelectorAll('img');
+  const players = f.grid.querySelectorAll('audio');
+  assert.equal(typeof image.listeners.error, 'function', 'Image failures need a recovery path');
+  image.listeners.error();
+  assert.equal(f.timers.size, 1);
+  const [id, retry] = [...f.timers][0]; f.timers.delete(id); retry();
+  assert.equal(image.src, 'https://api.example.test' + project.artworkUrl);
+  image.listeners.load();
+  assert.equal(image.hidden, false); assert.equal(second.hidden, false);
+  assert.deepEqual(f.grid.querySelectorAll('audio'), players);
+  assert.equal(players[0].pauses, 0); assert.equal(f.requests.length, 1); assert.equal(f.timers.size, 0);
+});
+
+test('missing or undecodable artwork stops automatic requests and offers an independent manual retry', async () => {
+  const f = ui(Response.json({ projects: [project] })); await f.done;
+  const [image] = f.grid.querySelectorAll('img'), [retry] = f.grid.querySelectorAll('button');
+  assert.ok(retry, 'Failed artwork needs a local retry control');
+  image.listeners.error();
+  const [id, automatic] = [...f.timers][0]; f.timers.delete(id); automatic();
+  image.listeners.error();
+  assert.equal(f.timers.size, 0); assert.equal(image.hidden, true); assert.equal(retry.disabled, false);
+  retry.focus(); retry.listeners.click(); retry.listeners.click();
+  assert.equal(retry.disabled, true);
+  image.listeners.load();
+  assert.equal(image.hidden, false); assert.notEqual(f.document.activeElement, retry);
+  assert.equal(f.requests.length, 1);
+});
+
+test('a successful image cancels pending recovery without extra requests', async () => {
+  const f = ui(Response.json({ projects: [project] })); await f.done;
+  const [image] = f.grid.querySelectorAll('img');
+  assert.equal(typeof image.listeners.error, 'function');
+  image.listeners.error(); image.listeners.load();
+  assert.equal(f.timers.size, 0);
+  image.listeners.error();
+  assert.equal(f.timers.size, 0, 'Each artwork has only one automatic retry budget');
+});
+
+test('a detached cover does not restart its failed image request', async () => {
+  const f = ui(Response.json({ projects: [project] })); await f.done;
+  const [image] = f.grid.querySelectorAll('img'), cover = f.grid.children[0].children[0];
+  image.listeners.error(); cover.isConnected = false;
+  const [id, automatic] = [...f.timers][0]; f.timers.delete(id); automatic();
+  assert.equal(image.hidden, true); assert.equal(f.timers.size, 0);
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fixture, mp3 } from './helpers.mjs';
+import { fixture, mp3, png } from './helpers.mjs';
 
 test('drafts and their media remain private; publish exposes only safe metadata; unpublish revokes future media requests', async t => {
   const f = await fixture(t); let p = await f.complete();
@@ -24,6 +24,43 @@ test('media supports ranges, suffix ranges, HEAD and invalid range responses', a
   const r=await f.call(p.audioUrl,{mode:'public',headers:{Range:'bytes=0-9'}}); assert.equal(r.status,206); assert.equal(r.headers.get('Content-Range'),'bytes 0-9/834'); assert.equal((await r.arrayBuffer()).byteLength,10);
   const head=await f.call(p.audioUrl,{mode:'public',method:'HEAD'}); assert.equal(head.status,200); assert.equal((await head.text()).length,0);
   assert.equal((await f.call(p.audioUrl,{mode:'public',headers:{Range:'bytes=9999-'}})).status,416);
+});
+
+test('an R2 artwork failure does not poison metadata, audio, or subsequent image reads', async t => {
+  const f = await fixture(t); let p = await f.complete();
+  p = await (await f.update(p, { published: true })).json();
+  const asset = f.env.DB.db.prepare('SELECT * FROM assets WHERE id = ?').get(p.artworkUrl.split('/').pop());
+  const get = f.env.MEDIA.get.bind(f.env.MEDIA);
+  let unavailable = true;
+  f.env.MEDIA.get = async (key, options) => {
+    if (unavailable && key === asset.object_key) throw new Error('Synthetic R2 outage');
+    return get(key, options);
+  };
+  const failed = await f.call(p.artworkUrl, { mode: 'public', headers: { Origin: f.env.PUBLIC_ORIGIN } });
+  assert.equal(failed.status, 500); assert.equal(failed.headers.get('Cache-Control'), 'no-store');
+  assert.equal(failed.headers.get('Access-Control-Allow-Origin'), f.env.PUBLIC_ORIGIN);
+  assert.doesNotMatch(await failed.text(), /Synthetic|object_key|projects\//);
+  assert.equal((await (await f.call('/api/projects', { mode: 'public' })).json()).projects.length, 1);
+  assert.equal((await f.call(p.audioUrl, { mode: 'public', headers: { Range: 'bytes=10-19' } })).status, 206);
+  unavailable = false;
+  const recovered = await f.call(p.artworkUrl, { mode: 'public' });
+  assert.equal(recovered.status, 200); assert.equal(recovered.headers.get('Content-Type'), 'image/png');
+  assert.deepEqual(new Uint8Array(await recovered.arrayBuffer()), png());
+  await f.update(p, { published: false });
+  assert.equal((await f.call(p.artworkUrl, { mode: 'public' })).status, 404);
+});
+
+test('missing artwork objects return uncached 404 without preventing other published media', async t => {
+  const f = await fixture(t); let p = await f.complete();
+  p = await (await f.update(p, { published: true })).json();
+  const asset = f.env.DB.db.prepare('SELECT * FROM assets WHERE id = ?').get(p.artworkUrl.split('/').pop());
+  f.env.MEDIA.objects.delete(asset.object_key);
+  for (const method of ['GET', 'HEAD']) {
+    const response = await f.call(p.artworkUrl, { mode: 'public', method });
+    assert.equal(response.status, 404); assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  }
+  assert.equal((await f.call(p.audioUrl, { mode: 'public' })).status, 200);
+  assert.equal((await (await f.call('/api/projects', { mode: 'public' })).json()).projects[0].artworkUrl, p.artworkUrl);
 });
 test('replace and delete clean associated files without touching other projects', async t => {
   const f=await fixture(t); let first=await f.complete('One'); const second=await f.complete('Two'); const old=first.audioUrl;

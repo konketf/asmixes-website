@@ -30,3 +30,7 @@ The site uses the AS Mixes identity and fixed service prices. Publish your credi
 Accessibility includes semantic landmarks, labelled controls, a skip link, visible keyboard focus, reduced-motion support, and an accessible mobile menu.
 
 Frontend portfolio regression tests use synthetic responses and run with `cd backend && node --test test/portfolio-ui.test.mjs`, or as part of `npm test`.
+
+Artwork failures get one automatic retry after 1.5 seconds, then an accessible per-cover retry control. Retrying an image keeps the current audio player and playback position. Images retain lazy loading; recovery uses the same publication-checked URL without cache-busting or metadata requests. Missing or corrupt images stop retrying automatically.
+
+Optional offline browser checks run with `node backend/scripts/browser-smoke.mjs` using an installed Chrome/Edge/Chromium (or set `BROWSER_PATH`). They intercept all page requests with local files and synthetic API, artwork, audio, and Turnstile responses; no real email is sent. The checks cover image failure/recovery, playback and seeking, contact responses, themes, and desktop/mobile layouts. Screenshots are saved under ignored `backend/build/browser-smoke/`. Before editing, `--baseline` captures the tracked HEAD's portfolio script/base stylesheet for comparison with the working tree; normal runs compare layout geometry when that baseline exists. Real Cloudflare/Turnstile availability and production delivery still require separate operational checks.
