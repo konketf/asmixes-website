@@ -4,15 +4,17 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source = readFileSync(new URL('../../dist/assets/contact.js', import.meta.url), 'utf8');
-function ui(result, { configured = true, theme } = {}) {
+function ui(result, { configured = true, theme, interact = true } = {}) {
   const listeners = {}, scriptListeners = {}, status = { textContent: '' }, button = {}, requests = [];
+  const verificationStatus = { textContent: '' };
+  let scripts = 0;
   let widgetOptions, resets = 0, tokenResets = 0, removed = 0;
   const documentListeners = {}, renderedThemes = [];
   const values = { name: 'Artist', email: 'artist@example.com', service: 'Mixing', trackCount: '60', message: 'Please keep this message.' };
   const form = { querySelector: () => button, addEventListener: (event, fn) => { listeners[event] = fn; }, reportValidity: () => true, reset: () => { resets++; values.message = ''; } };
-  const document = { querySelector: selector => selector === '#contact-form' ? form : status,
+  const document = { querySelector: selector => selector === '#contact-form' ? form : selector === '#verification-status' ? verificationStatus : status,
     addEventListener: (event, fn) => { documentListeners[event] = fn; },
-    createElement: () => ({ addEventListener: (event, fn) => { scriptListeners[event] = fn; } }), head: { append() {} } };
+    createElement: () => ({ addEventListener: (event, fn) => { scriptListeners[event] = fn; } }), head: { append() { scripts++; } } };
   const window = { AS_MIXES_PORTFOLIO: { apiOrigin: 'https://portfolio.example.workers.dev', turnstileSiteKey: configured ? 'test-public-site-key' : null }, turnstile: {
     render(selector, options) { assert.equal(selector, '#contact-verification'); assert.equal(options.theme, theme || 'auto'); assert.equal(options.action, 'contact'); renderedThemes.push(options.theme); widgetOptions = options; return 'widget'; }, reset() { tokenResets++; }, remove() { removed++; },
   } };
@@ -20,8 +22,10 @@ function ui(result, { configured = true, theme } = {}) {
   const fetch = async (url, init) => { requests.push({ url, init }); if (result instanceof Error) throw result; return typeof result === 'function' ? result() : result; };
   class FormData { get(key) { return values[key]; } }
   vm.runInNewContext(source, { document, window, fetch, FormData, URL, AbortSignal });
-  if (configured) scriptListeners.load();
-  return { button, status, values, requests, scriptListeners, renderedThemes, removed: () => removed,
+  if (configured && interact) { listeners.focusin(); scriptListeners.load(); }
+  return { button, status, verificationStatus, values, requests, scriptListeners, renderedThemes, removed: () => removed,
+    interact: event => listeners[event](), scripts: () => scripts,
+    fail: () => widgetOptions['error-callback'](), timeout: () => widgetOptions['timeout-callback'](),
     changeTheme(value) { theme = value; window.AS_MIXES_THEME = { theme }; documentListeners['asmixes:themechange'](); },
     token: () => widgetOptions.callback('test-token'), expire: () => widgetOptions['expired-callback'](), submit: () => listeners.submit({ preventDefault() {} }), resets: () => resets, tokenResets: () => tokenResets };
 }
@@ -69,4 +73,44 @@ test('UI rejects expired token, blocks duplicate clicks, and fails closed withou
   f.token(); const pending = f.submit(); await f.submit(); assert.equal(f.requests.length, 1);
   complete(Response.json({ accepted: true })); await pending;
   const disabled = ui(null, { configured: false }); await disabled.submit(); assert.equal(disabled.requests.length, 0); assert.equal(disabled.button.disabled, true); assert.match(disabled.status.textContent, /contact@asmixes.com/);
+});
+
+
+test('Turnstile stays unloaded until interaction and initializes once across input methods', () => {
+  for (const event of ['focusin', 'pointerdown', 'input']) {
+    const f = ui(null, { interact: false });
+    f.changeTheme('dark'); assert.equal(f.scripts(), 0);
+    assert.equal(f.renderedThemes.length, 0);
+    f.interact(event); f.interact('focusin'); f.interact('pointerdown'); f.interact('input');
+    assert.equal(f.scripts(), 1); assert.match(f.verificationStatus.textContent, /Loading/);
+    f.scriptListeners.load(); assert.deepEqual(f.renderedThemes, ['dark']);
+  }
+});
+
+test('early submissions start verification but never send or automatically replay the enquiry', async () => {
+  const f = ui(Response.json({ accepted: true }), { interact: false });
+  await f.submit(); await f.submit();
+  assert.equal(f.scripts(), 1); assert.equal(f.requests.length, 0);
+  assert.equal(f.button.disabled, true); assert.match(f.status.textContent, /complete the verification/);
+  f.scriptListeners.load(); await f.submit(); assert.equal(f.requests.length, 0);
+  f.token(); assert.equal(f.requests.length, 0);
+  await f.submit(); assert.equal(f.requests.length, 1);
+});
+
+test('script failure stays closed and explains the email alternative without losing text', async () => {
+  const f = ui(null, { interact: false }); f.interact('pointerdown'); f.scriptListeners.error();
+  await f.submit(); assert.equal(f.requests.length, 0); assert.equal(f.button.disabled, true);
+  assert.match(f.verificationStatus.textContent, /could not load.*contact@asmixes.com/);
+  assert.equal(f.values.message, 'Please keep this message.'); assert.equal(f.scripts(), 1);
+});
+
+test('failed, timed out and expired verification disables submission and supports recovery', async () => {
+  const f = ui(null);
+  for (const fail of [f.fail, f.timeout, f.expire]) {
+    f.token(); fail(); await f.submit();
+    assert.equal(f.button.disabled, true); assert.equal(f.requests.length, 0);
+    assert.match(f.verificationStatus.textContent, /unavailable|timed out|expired/);
+    assert.equal(f.values.message, 'Please keep this message.');
+  }
+  f.token(); assert.equal(f.button.disabled, false);
 });

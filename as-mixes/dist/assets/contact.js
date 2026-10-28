@@ -3,12 +3,15 @@
   const status = document.querySelector('#form-status');
   const button = form.querySelector('button[type="submit"]');
   const config = window.AS_MIXES_PORTFOLIO || {};
-  let widget, token = '', sending = false, pendingTheme = false;
+  const verificationStatus = document.querySelector('#verification-status');
+  let widget, token = '', sending = false, pendingTheme = false, initialized = false;
+  const verificationMessage = text => { verificationStatus.textContent = text; };
   button.disabled = true;
   const message = text => { status.textContent = text; };
   const ready = () => { button.disabled = sending || !token; };
   const reset = () => {
     token = '';
+    verificationMessage('Verification in progress. Complete any challenge shown before sending again.');
     if (widget !== undefined && window.turnstile) window.turnstile.reset(widget);
     ready();
   };
@@ -25,6 +28,7 @@
 
   form.addEventListener('submit', async event => {
     event.preventDefault();
+    initialize();
     if (sending || !form.reportValidity()) return;
     if (!token) { message('Please complete the verification before sending.'); return; }
     const data = new FormData(form);
@@ -50,18 +54,20 @@
   script.async = true;
   const renderWidget = () => {
     try {
+      verificationMessage('Verification in progress. Complete any challenge shown before sending.');
       widget = window.turnstile.render('#contact-verification', {
         sitekey: config.turnstileSiteKey, action: 'contact', theme: window.AS_MIXES_THEME?.theme || 'auto', size: 'flexible',
-        callback: value => { token = value; ready(); },
-        'expired-callback': () => { token = ''; ready(); },
-        'error-callback': () => { token = ''; ready(); message('Verification is unavailable. Please retry or email contact@asmixes.com.'); },
+        callback: value => { token = value; ready(); verificationMessage('Verification complete. You can send your message.'); },
+        'expired-callback': () => { token = ''; ready(); verificationMessage('Verification expired. Please complete verification again before sending.'); },
+        'timeout-callback': () => { token = ''; ready(); verificationMessage('Verification timed out. Please retry the verification or email contact@asmixes.com.'); },
+        'error-callback': () => { token = ''; ready(); verificationMessage('Verification is unavailable. Please retry the verification or reload, or email contact@asmixes.com.'); },
       });
-    } catch { message('Verification is unavailable. Please reload or email contact@asmixes.com.'); }
+    } catch { verificationMessage('Verification is unavailable. Please reload or email contact@asmixes.com.'); }
   };
   function replaceWidget() {
     token = ''; ready();
     try { window.turnstile.remove(widget); widget = undefined; renderWidget(); }
-    catch { message('Verification is unavailable. Please reload or email contact@asmixes.com.'); }
+    catch { verificationMessage('Verification is unavailable. Please reload or email contact@asmixes.com.'); }
   }
   document.addEventListener('asmixes:themechange', () => {
     if (widget === undefined) return;
@@ -70,6 +76,16 @@
     replaceWidget();
   });
   script.addEventListener('load', renderWidget);
-  script.addEventListener('error', () => message('Verification could not load. Please reload or email contact@asmixes.com.'));
-  document.head.append(script);
+  script.addEventListener('error', () => verificationMessage('Verification could not load. Please reload or email contact@asmixes.com.'));
+  function initialize() {
+    if (initialized) return;
+    initialized = true;
+    verificationMessage('Loading verification. Please wait before sending.');
+    document.head.append(script);
+  }
+  // Focus covers keyboard navigation; pointerdown covers mouse, pen and touch.
+  // Input also covers edits made through assistive technology and autofill.
+  for (const event of ['focusin', 'pointerdown', 'input']) {
+    form.addEventListener(event, initialize, { once: true });
+  }
 })();

@@ -92,6 +92,8 @@ try {
       return fulfill(requestId, 200, '// Offline analytics fixture.', 'text/javascript');
     }
     if (url.hostname === 'challenges.cloudflare.com') {
+      if (scenario === 'verification-load-error') return send('Fetch.failRequest', { requestId, errorReason: 'Failed' });
+      if (scenario === 'verification-slow') await delay(1500);
       return fulfill(requestId, 200, `window.turnstile = { render(selector, options) { window.testVerification = options; return 'fixture'; }, reset() {}, remove() {} };`, 'text/javascript');
     }
     assert.equal(url.origin, 'https://api.asmixes.com', 'Unexpected external request');
@@ -140,6 +142,7 @@ try {
     scenario = mode; artworkAttempts = 0; metadataAttempts = 0;
     await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
     await send('Page.navigate', { url: origin + '/?case=' + (++navigation) + '#work' });
+    await until(`location.search === '?case=${navigation}' && document.readyState === 'complete'`);
     await until('document.querySelector(".work-grid audio") || document.querySelector("#portfolio-retry")?.hidden === false');
   }
   async function screenshot(name) {
@@ -206,7 +209,54 @@ try {
     scenario = 'healthy'; await evaluate('document.querySelector("#portfolio-retry").click()');
     await until('document.querySelectorAll(".work-grid audio").length === 2'); assert.equal(metadataAttempts, 2);
 
+    const challengeCount = () => requests.filter(r => new URL(r.url).hostname === 'challenges.cloudflare.com').length;
+    const beforeInteraction = challengeCount();
+    await open('verification-slow');
+    await evaluate('window.AS_MIXES_THEME.setPreference("dark")');
+    await delay(300);
+    assert.equal(challengeCount(), beforeInteraction, 'No Turnstile before form interaction');
+    for (let i = 0; i < 80; i++) {
+      await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+      await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+      if (await evaluate('document.querySelector("#contact-form").contains(document.activeElement)')) break;
+    }
+    assert.equal(await evaluate('document.querySelector("#contact-form").contains(document.activeElement)'), true);
+    assert.match(await evaluate('document.querySelector("#verification-status").textContent'), /Loading/);
+    await evaluate(`(() => { const f = document.querySelector('#contact-form'); f.elements.name.value = 'Test artist'; f.elements.email.value = 'artist@example.com'; f.elements.message.value = 'Offline browser enquiry.'; f.requestSubmit(); })()`);
+    assert.equal(contactAttempts, 0, 'No enquiry while loading');
+    await until('window.testVerification');
+    assert.equal(challengeCount(), beforeInteraction + 1);
+    for (const callback of ['error-callback', 'expired-callback', 'timeout-callback']) {
+      await evaluate(`testVerification.callback('test'); testVerification['${callback}'](); document.querySelector('#contact-form').requestSubmit()`);
+      assert.equal(contactAttempts, 0, 'No enquiry after unsuccessful verification');
+      assert.equal(await evaluate('document.querySelector("#contact-form button[type=submit]").disabled'), true);
+      assert.match(await evaluate('document.querySelector("#verification-status").textContent'), /unavailable|expired|timed out/);
+    }
+    for (const touch of [false, true]) {
+      await open(touch ? 'verification-load-error' : 'healthy', touch ? 390 : 1440);
+      const beforePointer = challengeCount();
+      await evaluate('document.querySelector("#contact-form input").scrollIntoView({block:"center"})');
+      const point = await evaluate('(() => { const r = document.querySelector("#contact-form input").getBoundingClientRect(); return {x:r.x + 10, y:r.y + 10}; })()');
+      if (touch) {
+        await send('Emulation.setTouchEmulationEnabled', { enabled: true });
+        await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+        await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      } else {
+        await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', clickCount: 1 });
+        await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', clickCount: 1 });
+      }
+      if (touch) {
+        await until('document.querySelector("#verification-status").textContent.includes("could not load")');
+        assert.equal(await evaluate('document.querySelector("#contact-form button[type=submit]").disabled'), true);
+        await send('Emulation.setTouchEmulationEnabled', { enabled: false });
+      } else await until('window.testVerification');
+      assert.equal(challengeCount(), beforePointer + 1, 'Only one script after pointer and focus');
+      assert.equal(await evaluate('document.querySelector("#verification-status").getAttribute("role")'), 'status');
+      assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    }
     await open('healthy');
+    await send('Emulation.setFocusEmulationEnabled', { enabled: true });
+    await evaluate('document.querySelector("#contact-form input").focus()');
     await until('window.testVerification');
     await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }, { name: 'prefers-reduced-motion', value: 'reduce' }] });
     await evaluate('window.AS_MIXES_THEME.setPreference("system")');

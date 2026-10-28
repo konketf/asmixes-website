@@ -42,7 +42,6 @@
       <p class="eyebrow">AS MIXES / PRIVACY</p>
       <h1>Privacy <em>notice.</em></h1>
       <p>Last updated: <time datetime="2026-10-28">28 October 2026</time></p>
-      <p class="privacy-draft"><strong>Draft for review &mdash; not for publication.</strong></p>
         <p>This notice explains how AS Mixes handles personal information when you visit this website or contact me about a project.</p>
       <section aria-labelledby="controller">
         <h2 id="controller">Who is responsible?</h2>
@@ -68,7 +67,7 @@
       </section>
       <section aria-labelledby="turnstile">
         <h2 id="turnstile">Turnstile and rate limiting</h2>
-        <p>The homepage loads Cloudflare Turnstile to protect the contact form against automated submissions. Turnstile processes technical signals such as IP addresses, browser information, connection characteristics and the website origin. It supplies a verification token that the server checks with Cloudflare.</p>
+        <p>Cloudflare Turnstile loads only when you first interact with the contact form, for example by focusing a field or tapping the form, to protect it against automated submissions. Simply viewing the homepage does not load Turnstile. Turnstile processes technical signals such as IP addresses, browser information, connection characteristics and the website origin. It supplies a verification token that the server checks with Cloudflare.</p>
         <p>Cloudflare processes these signals on my behalf to provide website protection. Cloudflare also acts as an independent controller when processing signals to improve Turnstile’s bot-detection capabilities, as explained in its <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Turnstile Privacy Addendum</a>.</p>
         <p>Cloudflare’s edge rate limiter uses IP addresses. The contact form also creates a daily-changing pseudonymous identifier derived from the IP address for rate limiting.</p>
         <p>The contact counters stored in Cloudflare D1 contain that identifier, counts and expiry times, together with a site-wide daily count. These counter records do not contain submitted enquiry messages or contact details.</p>
