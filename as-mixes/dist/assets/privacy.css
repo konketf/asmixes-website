@@ -1,0 +1,12 @@
+.public-site .privacy-copy { max-width: 780px; }
+.privacy-copy h1 { font-size: clamp(42px, 7vw, 64px); }
+.privacy-copy section { margin-top: 36px; }
+.privacy-copy h2 { font-size: 25px; letter-spacing: -.5px; line-height: 1.3; margin-bottom: 14px; }
+.privacy-copy p { color: var(--muted); line-height: 1.8; overflow-wrap: anywhere; }
+.privacy-copy a, .public-site .privacy-note a, .public-site footer .privacy-link { text-decoration: underline; text-underline-offset: .2em; }
+.privacy-copy a:hover, .public-site .privacy-note a:hover { color: var(--accent); }
+.privacy-copy strong { color: var(--text); }
+.privacy-copy .privacy-draft, .privacy-copy .privacy-confirm { border-left: 3px solid var(--accent); padding: 12px 16px; background: var(--panel); }
+.public-site .privacy-note { font-size: 13px; max-width: none; margin-bottom: 18px; }
+.public-site footer { gap: 20px; flex-wrap: wrap; }
+.public-site footer .privacy-link { font-size: 12px; color: var(--muted); }

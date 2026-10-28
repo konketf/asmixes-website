@@ -1,0 +1,171 @@
+AS MIXES PRIVACY REVIEW - 28 October 2026
+Not publication approval. The visitor-facing page retains its draft banner.
+
+FILES AND PROCESS
+The site is buildless (as-mixes/README.md). dist/privacy.html is the editable
+public page, not generated framework output. privacy-review/privacy.html is a
+synchronized review copy. Existing CSS, route, navigation and homepage links are
+preserved. The footer's accidental question-mark brand glyph was repaired.
+Generated backend/fallback artifacts are rebuilt only by the existing npm build.
+The older homepage-and-sitemap.patch has already been applied locally; do not
+apply it again. privacy.css is unchanged.
+
+RELEASE STATUS
+The owner requested commit, push and deployment through the existing Pages
+workflow. Legal name, supplied postal address, public email and consolidated copy
+are included. The previously removed draft banner has been restored because the
+publication checks below remain unresolved. Deployment is authorized with that
+banner retained; deployment does not certify legal compliance. No backend or
+provider configuration changes are part of this release. Results and the release
+commit/workflow identifiers are recorded in the deployment report accompanying
+this change, rather than a self-referential commit hash in this file.
+
+A. VERIFIED FROM REPOSITORY
+- dist/index.html and backend/src/contact.mjs require name/band, email, service
+  and message. Service has a default selection; the server validates it. Track
+  count is optional, 1-60 when supplied. A Turnstile token is required separately.
+- dist/assets/theme.js saves asmixes-theme after a choice. No application expiry
+  or network transmission of the value exists. Choosing System stores "system";
+  clearing browser site data removes the saved value.
+- contact.mjs computes HMAC-SHA-256 over the UTC day number and IP with a Worker
+  secret. The daily-changing identifier is pseudonymous, not anonymous; the
+  secret itself does not rotate daily. Raw IP also keys the separate edge limiter.
+- D1 contact_limits has key, count, expires_at. Per-IP keys include the 10-minute
+  window and HMAC; global keys contain the daily bucket. These records contain no
+  enquiry fields. Per-identifier expiry is the window end; global expiry is the
+  daily boundary. The public scheduled handler calls cleanup hourly at minute 23,
+  deleting at most 500 expired rows per invocation. Expiry is not physical erasure.
+- The browser sends JSON to the Worker. Siteverify receives token and secret, not
+  enquiry fields or the remoteip parameter. Resend receives the enquiry fields,
+  fixed sender, private configured recipient and reply-to. The public contact
+  handler has no content logging or additional message destination. Worker error
+  logs elsewhere contain generic portfolio failure/cleanup messages, not bodies.
+- Public portfolio API/media use Cloudflare; read endpoints also use edge limits.
+  The separate private admin flow uses Cloudflare Access/JWKS and stores portfolio
+  metadata/media in D1/R2. That is not an extra enquiry-email forwarding service.
+- No additional public tracking pixel, embedded third-party content, analytics
+  beacon, log export or browser-storage writer was found in public source/config.
+  Turnstile loads dynamically on the homepage. The privacy page loads only the
+  existing theme/navigation scripts. Dashboard features remain separate evidence.
+
+B. OWNER-CONFIRMED, NOT INDEPENDENTLY VERIFIED BY SOURCE
+Aleksandr Sinitsõn operates personally in Estonia; contact@asmixes.com is public;
+only the owner routinely handles enquiries. Resend delivers directly to a
+Microsoft-hosted Outlook mailbox. The owner subsequently supplied a postal
+address for inclusion in the privacy notice; no private mailbox address is included.
+Cloudflare services use Free plans; Web Analytics is enabled; Turnstile is Managed
+with pre-clearance disabled; Workers Observability is disabled. Observed request
+records include IP, time, path, response and country. Disabled Observability does
+not imply no provider logging. The browser test observed no first-party cookies,
+asmixes-theme locally, and cf.turnstile.u under challenges.cloudflare.com. This
+is not a universal zero-cookie assertion. The six-month review of unsuccessful
+enquiries is an adopted manual policy, not an automatic deletion mechanism.
+
+ADDRESS REVIEW ITEM - ADDRESSED
+The owner supplied a postal address and explicitly requested its inclusion in
+the privacy notice. The address-related review item is marked addressed by that
+supplied postal address, now shown only in the notice and its review copy.
+The draft banner remains because the other publication checks are still open.
+
+C. REMAINING PUBLICATION ISSUES
+1. Storage/consent: cf.turnstile.u lifetime and exact access/purpose need provider
+   clarification or controlled measurement. Token expiry is not storage expiry.
+   Review whether the actual storage and analytics configuration needs consent
+   and what information is required; no exemption or completed consent assessment
+   is asserted. No checkbox/banner or provider setting was changed.
+   https://www.aki.ee/isikuandmed/kkk/interneti-ja-veebitegevused
+2. Retention: provider-specific security log, recovery and backup details remain
+   incomplete, especially GitHub/Cloudflare logs and Outlook recovery/backups.
+   Reporting history is not a deletion deadline. Resend's public documentation
+   supports the supplied 30-day Free-plan email/log period, seven-day backups and
+   90-day post-termination period; account-specific exceptions still need checking.
+   https://resend.com/security/gdpr
+3. Analytics discrepancy: no beacon is present in source, and the HTML CSP permits
+   scripts only from self/challenges.cloudflare.com and connections only to
+   api.asmixes.com. This can block the usual externally injected Web Analytics
+   beacon/endpoint. The owner's enabled dashboard setting is retained as evidence,
+   but effective collection needs a live network/CSP check. No production traffic
+   or configuration was changed. Browser analytics is distinct from HTTP security
+   records. Also review the purpose/legal basis for traffic/performance analytics
+   explicitly before removing the draft banner; the supplied security basis is not automatically an
+   assessment of all analytics processing.
+4. Agreements/transfers: public terms support the qualified transfer wording;
+   they do not verify account-specific entities, regions, subprocessors, applicable
+   safeguards or every disclosure obligation. No DPF certification was independently
+   verified. Microsoft enterprise DPA is not assumed to cover personal Outlook.
+   Confirm the arrangements applicable to each actual account and how safeguard
+   copies are available. The user's copy is retained without claiming certification.
+
+PROPOSED LEGITIMATE-INTEREST ASSESSMENT - FOR OWNER REVIEW
+Purpose: protect enquiry availability and delivery capacity against plausible
+spam, automated submissions and excessive requests. No confirmed attack is assumed.
+Evidence to record: ordinary traffic, provider/email quotas, plausible abuse paths,
+false-positive reports and why each layer materially addresses those risks.
+Necessity: edge limits bound load; D1 counters enforce durable sending caps;
+Turnstile adds automated-submission screening. Assess whether their combination,
+thresholds and loading Turnstile before form interaction are proportionate.
+Compare less intrusive choices: direct-email-only contact, basic validation,
+honeypots, lower-volume limits, or challenge-on-interaction. Document effectiveness,
+accessibility and trade-offs rather than assuming every alternative is inadequate.
+Safeguards: daily-changing HMAC identifiers instead of raw IP in D1, ten-minute
+and daily windows, bounded scheduled cleanup, no message/contact details in
+counters, and direct email as an alternative. Raw IP remains in edge/provider
+processing; pseudonymisation and expiry do not eliminate privacy impacts.
+Balance: visitors reasonably expect a working protected form, but shared IPs,
+VPNs, assistive technology, disabled scripts and false positives can deny access.
+Check rejection rates and accessibility, keep retry messages understandable,
+ensure the email alternative is usable, and minimise unnecessary signal collection.
+Review thresholds, cleanup backlog and provider purposes periodically and after
+material changes or complaints. Cloudflare's separate controller purpose needs
+its own consideration. Preventive need can be legitimate, but "just in case"
+alone does not prove necessity or proportionality. Owner review and a documented
+conclusion are still required; this is not completed legal approval.
+
+PROVIDER LINKS CHECKED
+The public page links to all requested provider documents with descriptive labels.
+https://www.cloudflare.com/cloudflare-customer-dpa/
+https://www.cloudflare.com/privacypolicy/
+https://www.cloudflare.com/turnstile-privacy-policy/
+https://developers.cloudflare.com/web-analytics/about/
+https://resend.com/legal/dpa
+https://resend.com/security/gdpr
+https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement
+https://www.microsoft.com/en-us/privacy/privacystatement
+https://www.aki.ee/en
+Cloudflare's description of cookies/local storage/fingerprinting for analytics:
+https://blog.cloudflare.com/the-rum-diaries-enabling-web-analytics-by-default/
+
+COPY DIFFERENCES
+No rate-limit correction was needed. Supplied wording and retention qualifications
+are retained. Added semantic HTML, descriptive links and the requested date; kept
+only the draft-banner warning, removing its obsolete placeholder instruction.
+Fixed the existing footer glyph. No processing behaviour changed.
+
+VALIDATION COMPLETED FOR THE EARLIER CONSOLIDATION
+- npm run check: passed; npm test: 80 passed, zero failed.
+- npm run build: all existing dry-run Worker builds and fallback preparation passed.
+- npm run check:artifacts: 45 files passed the existing artifact scan.
+- Static checks: no confirmation placeholders; draft banner, exact owner spelling,
+  public email only, unique IDs, valid ARIA/fragment targets, local assets, both
+  homepage links, and matching review/fallback copies verified.
+- Offline headless Chromium: 1440px, 390px and 320px widths in light/dark themes;
+  no horizontal overflow or CSP errors; mobile menu/Escape, keyboard skip link,
+  descriptive links, homepage-to-privacy navigation and no-JavaScript content passed.
+  Desktop-light and mobile-dark screenshots visually inspected. No test enquiries
+  were sent; browser page requests were intercepted locally. Provider URLs were
+  opened through read-only web research, not through the enquiry flow.
+- git diff --check passed. Existing unrelated admin/design changes were preserved.
+- No dependencies, scripts, trackers, settings, residential/private destination
+  addresses, signed agreements, secrets or real messages added to public artifacts.
+- Screenshots and temporary browser harness are in ignored backend/build/privacy-smoke
+  and backend/build/privacy-smoke.mjs; these are validation artifacts, not website files.
+
+RELEASE VALIDATION
+Re-run before the requested release: syntax checks, all 80 tests, existing dry-run
+builds and 45-file artifact scan passed. Offline Chromium passed at 1440/390/320px
+in light/dark themes, including postal address, links, keyboard navigation and
+no-JavaScript content. Static legal-detail, local link/fragment and sitemap checks
+passed. Only privacy page/CSS, homepage links, sitemap and review documentation
+are included. Existing unrelated admin/design edits are excluded. The supplied
+postal address is intentionally public in the privacy notice; no private mailbox
+address, credentials or signed agreements are included. Draft banner retained.
