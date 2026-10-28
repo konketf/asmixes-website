@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self'; img-src 'self' https://api.asmixes.com; media-src https://api.asmixes.com; connect-src https://api.asmixes.com; frame-src https://challenges.cloudflare.com; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com/beacon.min.js; script-src-attr 'none'; style-src 'self'; img-src 'self' https://api.asmixes.com; media-src https://api.asmixes.com; connect-src https://api.asmixes.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; base-uri 'none'; object-src 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="How AS Mixes handles website visits and project enquiries, and how to exercise your privacy rights.">
   <link rel="canonical" href="https://asmixes.com/privacy.html">
@@ -114,5 +114,8 @@
     </article>
   </main>
   <footer class="wrap"><a class="brand" href="index.html#home"><span class="brand-mark" aria-hidden="true">&#8779;</span> AS MIXES</a><span>Mixing and mastering for rock and metal.</span><a href="index.html#contact">Contact</a></footer>
+  <!-- Cloudflare Web Analytics -->
+  <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "8d40db52a3364be6855d621ecc79e00c"}'></script>
+  <!-- End Cloudflare Web Analytics -->
 </body>
 </html>

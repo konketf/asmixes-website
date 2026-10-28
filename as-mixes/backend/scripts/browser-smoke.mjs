@@ -87,6 +87,10 @@ try {
       }
       catch { return fulfill(requestId, 404, '', 'text/plain'); }
     }
+    if (url.href === 'https://static.cloudflareinsights.com/beacon.min.js') {
+      // Keep regression checks offline: do not send synthetic visits to analytics.
+      return fulfill(requestId, 200, '// Offline analytics fixture.', 'text/javascript');
+    }
     if (url.hostname === 'challenges.cloudflare.com') {
       return fulfill(requestId, 200, `window.turnstile = { render(selector, options) { window.testVerification = options; return 'fixture'; }, reset() {}, remove() {} };`, 'text/javascript');
     }

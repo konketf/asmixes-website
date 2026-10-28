@@ -80,15 +80,21 @@ C. REMAINING PUBLICATION ISSUES
    supports the supplied 30-day Free-plan email/log period, seven-day backups and
    90-day post-termination period; account-specific exceptions still need checking.
    https://resend.com/security/gdpr
-3. Analytics discrepancy: no beacon is present in source, and the HTML CSP permits
-   scripts only from self/challenges.cloudflare.com and connections only to
-   api.asmixes.com. This can block the usual externally injected Web Analytics
-   beacon/endpoint. The owner's enabled dashboard setting is retained as evidence,
-   but effective collection needs a live network/CSP check. No production traffic
-   or configuration was changed. Browser analytics is distinct from HTTP security
-   records. Also review the purpose/legal basis for traffic/performance analytics
-   explicitly before removing the draft banner; the supplied security basis is not automatically an
-   assessment of all analytics processing.
+3. Analytics integration: corrected and approved by the owner for this release.
+   The owner confirmed manual JavaScript installation for the DNS-only GitHub
+   Pages domains. index.html and privacy.html each include exactly one official
+   module beacon with the dashboard-supplied public site token. CSP adds only
+   the exact beacon script URL and https://cloudflareinsights.com connection
+   origin; all prior restrictions remain. No DNS/proxy setting changed.
+   Candidate pages were served as browser-local responses under the canonical
+   origin. The real official script returned HTTP 200 and the real reporting
+   endpoint returned HTTP 204 on both pages, without CSP violations. This sent
+   a small amount of test analytics traffic. No enquiries were submitted.
+   This validates the candidate integration, not deployment or dashboard totals.
+   Existing notice wording about traffic/performance and Cloudflare's stated
+   tracking practices matches this implementation. It does not claim a blanket
+   consent exemption. The purpose/legal-basis and storage assessment remains an
+   owner review item; integration success does not certify privacy compliance.
 4. Agreements/transfers: public terms support the qualified transfer wording;
    they do not verify account-specific entities, regions, subprocessors, applicable
    safeguards or every disclosure obligation. No DPF certification was independently
@@ -169,3 +175,20 @@ passed. Only privacy page/CSS, homepage links, sitemap and review documentation
 are included. Existing unrelated admin/design edits are excluded. The supplied
 postal address is intentionally public in the privacy notice; no private mailbox
 address, credentials or signed agreements are included. Draft banner retained.
+
+ANALYTICS CHANGE VALIDATION
+All 80 tests, syntax checks, existing dry-run builds and the artifact scan passed.
+Security regression coverage checks both public pages for the exact allowed CSP
+sources and exactly one module beacon; the admin page remains analytics-free.
+The general browser smoke harness mocks the analytics script to stay offline.
+The real-provider verification harness/results are ignored build artifacts under
+backend/build/analytics-verification*. The owner subsequently authorized commit,
+push to origin/main and the existing GitHub Pages deployment workflow. Live
+verification results and commit/run identifiers are provided in the release report.
+Official technical references:
+https://developers.cloudflare.com/web-analytics/faq/
+https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/
+
+The offline browser suite also passed against a fresh committed-HEAD baseline,
+with unchanged desktop/mobile layout geometry. Its older saved baseline predates
+the privacy changes and was unsuitable for this comparison; it was preserved.

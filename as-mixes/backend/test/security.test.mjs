@@ -78,7 +78,7 @@ test('GitHub Pages CSP precedes assets and permits exactly the actual external d
   const root = new URL('../../dist/', import.meta.url), window = {};
   vm.runInNewContext(readFileSync(new URL('assets/portfolio-config.js', root), 'utf8'), { window });
   const api = window.AS_MIXES_PORTFOLIO.apiOrigin;
-  for (const filename of ['index.html', 'admin/index.html']) {
+  for (const filename of ['index.html', 'privacy.html', 'admin/index.html']) {
     const html = readFileSync(new URL(filename, root), 'utf8');
     const tag = /<meta http-equiv="Content-Security-Policy" content="([^"]+)">/.exec(html);
     assert.ok(tag); assert.ok(tag.index < html.indexOf('<link')); assert.ok(tag.index < html.indexOf('<script'));
@@ -87,11 +87,21 @@ test('GitHub Pages CSP precedes assets and permits exactly the actual external d
     assert.deepEqual(directives['style-src'], ["'self'"]);
     assert.doesNotMatch(tag[1], /unsafe-inline|unsafe-eval|\*|data:|blob:|frame-ancestors/);
     assert.doesNotMatch(html, /\s(?:style|on\w+)\s*=|<script\b[^>]*>\s*[^<\s]/i);
-    if (filename === 'index.html') {
-      assert.deepEqual(directives['script-src'], ["'self'", 'https://challenges.cloudflare.com']);
+    if (filename !== 'admin/index.html') {
+      assert.deepEqual(directives['script-src'], ["'self'", 'https://challenges.cloudflare.com', 'https://static.cloudflareinsights.com/beacon.min.js']);
       assert.deepEqual(directives['frame-src'], ['https://challenges.cloudflare.com']);
-      for (const directive of ['connect-src', 'media-src']) assert.deepEqual(directives[directive], [api]);
+      assert.deepEqual(directives['connect-src'], [api, 'https://cloudflareinsights.com']);
+      assert.deepEqual(directives['media-src'], [api]);
       assert.deepEqual(directives['img-src'], ["'self'", api]);
+      const beacons = [...html.matchAll(/<script\b[^>]*src="https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js"[^>]*><\/script>/g)];
+      assert.equal(beacons.length, 1, `${filename}: exactly one analytics script`);
+      assert.match(beacons[0][0], /type="module"/);
+      assert.deepEqual(JSON.parse(/data-cf-beacon='([^']+)'/.exec(beacons[0][0])[1]), { token: '8d40db52a3364be6855d621ecc79e00c' });
+      assert.equal((html.match(/data-cf-beacon=/g) || []).length, 1);
+    } else {
+      assert.deepEqual(directives['script-src'], ["'self'"]);
+      assert.equal(directives['connect-src'], undefined);
+      assert.doesNotMatch(html, /cloudflareinsights|data-cf-beacon/);
     }
   }
   for (const name of readdirSync(new URL('assets/', root)).filter(name => /\.(css|js)$/.test(name))) {
