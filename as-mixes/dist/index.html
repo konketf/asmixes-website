@@ -97,7 +97,7 @@
             <div class="price">€70 <span>/ song</span></div>
             <ul>
               <li>Multitrack mixing (Up to 60 tracks)</li>
-              <li>Guitar Reamping</li>
+              <li>Guitar Reamping: send clean DI (direct input) recordings without amp sounds or effects, alongside your existing guitar tracks.</li>
               <li>Three rounds of revisions</li>
               <li>High-resolution stereo mix</li>
               <li>Instrumental mix on request</li>
@@ -166,9 +166,10 @@
             <option>Mastering</option>
           </select></label>
         <label>Tracks per mix (optional, maximum 60)<input name="trackCount" type="number" min="1" max="60" step="1" placeholder="Number of audio tracks in a mix (max 60)"></label>
-        <label>Tell me about the project<textarea name="message" rows="4"
+        <label>Tell me about the project<textarea name="message" rows="4" aria-describedby="reamping-note"
             placeholder="A few details, references, and a link to your demos…" required
             maxlength="5000"></textarea></label>
+        <p class="form-note" id="reamping-note">Want guitar reamping? Let me know whether you have clean guitar DI recordings and describe the sound you're after, with a reference if you have one.</p>
         <div id="contact-verification" class="contact-verification"></div>
         <p class="form-note" id="verification-status" role="status" aria-live="polite" aria-atomic="true">Spam protection loads when you interact with this form. Verification is required before sending.</p>
         <button class="button" type="submit" disabled>Send message <span
